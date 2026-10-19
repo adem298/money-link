@@ -9,6 +9,8 @@ import {
   CircleAlert,
   Copy,
   ExternalLink,
+  Eye,
+  EyeOff,
   Info,
   Link2,
   LoaderCircle,
@@ -137,16 +139,16 @@ function AppHeader({ wallet, onConnect, onDisconnect, walletLoading, path, navig
   );
 }
 
-function BalanceCard({ balance, loading, connected, onRefresh }) {
+function BalanceCard({ balance, loading, connected, masked, onToggleMask, onRefresh }) {
   return (
     <section className="balance-card">
       <div className="balance-card-copy">
-        <div className="balance-label"><span className="balance-pulse" /> DEVNET WALLET BALANCE</div>
-        <div className="balance-value">{connected ? (loading ? <span className="balance-loading">•••</span> : balance === null ? '—' : `$${formatUsdcAmount(balance)}`) : 'Connect a wallet'}</div>
-        <div className="balance-caption">{connected ? 'USDC · Solana Devnet test tokens' : 'Connect Phantom, Solflare, or another Solana wallet.'}</div>
+        <div className="balance-label"><span className="balance-pulse" /> {connected ? 'CONNECTED WALLET · DEVNET' : 'WALLET STATUS · DEVNET'}</div>
+        <div className="balance-value">{connected ? (loading ? <span className="balance-loading">•••</span> : balance === null ? '—' : masked ? '••••••' : `$${formatUsdcAmount(balance)}`) : 'No wallet connected'}</div>
+        <div className="balance-caption">{connected ? 'USDC balance from Solana RPC' : 'Connect a wallet to read its on-chain USDC balance.'}</div>
       </div>
-      {connected && <button className="balance-refresh" type="button" onClick={onRefresh} disabled={loading} title="Refresh USDC balance"><RefreshCw size={16} className={loading ? 'spin' : ''} /></button>}
-      <div className="balance-decoration"><span /><span /><span /></div>
+      {connected && <div className="balance-actions"><button className="balance-icon-button" type="button" onClick={onToggleMask} aria-label={masked ? 'Reveal balance' : 'Mask balance'} title={masked ? 'Reveal balance' : 'Mask balance'}>{masked ? <Eye size={16} /> : <EyeOff size={16} />}</button><button className="balance-icon-button" type="button" onClick={onRefresh} disabled={loading} aria-label="Refresh balance" title="Refresh balance"><RefreshCw size={15} className={loading ? 'spin' : ''} /></button></div>}
+      <div className="balance-decoration" aria-hidden="true"><span /><span /><span /><span /></div>
     </section>
   );
 }
@@ -155,6 +157,8 @@ function SendPage({
   wallet,
   balance,
   balanceLoading,
+  masked,
+  onToggleMask,
   programStatus,
   onConnect,
   onRefreshBalance,
@@ -198,7 +202,7 @@ function SendPage({
 
       <div className="send-grid">
         <div className="send-main-column">
-          <BalanceCard balance={balance} loading={balanceLoading} connected={Boolean(wallet)} onRefresh={onRefreshBalance} />
+          <BalanceCard balance={balance} loading={balanceLoading} connected={Boolean(wallet)} masked={masked} onToggleMask={onToggleMask} onRefresh={onRefreshBalance} />
           {createdLink ? (
             <section className="panel created-panel">
               <div className="created-mark"><Check size={22} /></div>
@@ -357,6 +361,7 @@ export default function App() {
   const [programError, setProgramError] = useState('');
   const [balance, setBalance] = useState(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [maskedBalance, setMaskedBalance] = useState(true);
   const [links, setLinks] = useState([]);
   const [linksLoading, setLinksLoading] = useState(false);
   const [linksError, setLinksError] = useState('');
@@ -708,6 +713,8 @@ export default function App() {
             wallet={wallet}
             balance={balance}
             balanceLoading={balanceLoading}
+            masked={maskedBalance}
+            onToggleMask={() => setMaskedBalance((current) => !current)}
             programStatus={programStatus}
             onConnect={connectWallet}
             onRefreshBalance={refreshBalance}
