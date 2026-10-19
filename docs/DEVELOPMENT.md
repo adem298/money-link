@@ -9,10 +9,9 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` and connect Phantom, Solflare, or another injected Solana wallet configured for **Devnet**. The client uses `https://api.devnet.solana.com` by default. Create a `.env.local` file to use a different RPC or configure the deployed program:
+Open `http://localhost:5173` and connect Phantom, Solflare, or another injected Solana wallet configured for **Devnet**. The client is intentionally pinned to `https://api.devnet.solana.com` and Circle's Devnet USDC mint; there is no RPC/network override. After deployment, create `.env.local` with the program public key:
 
 ```env
-VITE_SOLANA_RPC_URL=https://api.devnet.solana.com
 VITE_PROGRAM_ID=YOUR_DEPLOYED_PROGRAM_PUBLIC_KEY
 ```
 

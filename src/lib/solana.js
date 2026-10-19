@@ -8,14 +8,16 @@ import {
   TransactionInstruction,
 } from '@solana/web3.js';
 
+const viteEnv = import.meta.env || {};
+
 export const NETWORK = 'devnet';
 export const USDC_DECIMALS = 6;
 export const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 export const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
 export const USDC_MINT = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
 export const PLACEHOLDER_PROGRAM_ID = 'Aq5AQv1znmkFn5Kbr7wrdgvEvko5ppcLD7ShnaEGGFaR';
-export const PROGRAM_ID = new PublicKey(import.meta.env.VITE_PROGRAM_ID || PLACEHOLDER_PROGRAM_ID);
-export const RPC_URL = import.meta.env.VITE_SOLANA_RPC_URL || clusterApiUrl(NETWORK);
+export const PROGRAM_ID = new PublicKey(viteEnv.VITE_PROGRAM_ID || PLACEHOLDER_PROGRAM_ID);
+export const RPC_URL = clusterApiUrl(NETWORK);
 export const connection = new Connection(RPC_URL, 'confirmed');
 const encoder = new TextEncoder();
 
@@ -30,9 +32,9 @@ function concatBytes(...parts) {
   return output;
 }
 
-async function anchorDiscriminator(namespace, instructionName) {
+export async function anchorDiscriminator(namespace, instructionName) {
   const input = encoder.encode(`${namespace}:${instructionName}`);
-  const digest = await window.crypto.subtle.digest('SHA-256', input);
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', input);
   return new Uint8Array(digest).slice(0, 8);
 }
 
@@ -50,6 +52,7 @@ export function parseUsdcAmount(value) {
   const [whole, fraction = ''] = input.split('.');
   const amount = BigInt(whole) * 1_000_000n + BigInt(fraction.padEnd(6, '0') || '0');
   if (amount <= 0n) throw new Error('Amount must be greater than zero.');
+  if (amount > (1n << 64n) - 1n) throw new Error('Amount exceeds the supported USDC range.');
   return amount;
 }
 
@@ -67,12 +70,12 @@ export function formatUsdcAmount(amount, minimumDecimals = 2) {
 export function encodeSecret(secretKey) {
   let binary = '';
   for (const byte of secretKey) binary += String.fromCharCode(byte);
-  return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  return globalThis.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
 export function decodeSecret(encoded) {
   const normalized = encoded.replace(/-/g, '+').replace(/_/g, '/');
-  const binary = window.atob(normalized + '='.repeat((4 - (normalized.length % 4)) % 4));
+  const binary = globalThis.atob(normalized + '='.repeat((4 - (normalized.length % 4)) % 4));
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 

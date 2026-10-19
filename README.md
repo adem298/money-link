@@ -11,9 +11,9 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` and connect Phantom, Solflare, or another compatible browser wallet configured for Devnet. Use test USDC and Devnet SOL only. `npm run build` builds the frontend.
+Open `http://localhost:5173` and connect Phantom, Solflare, or another compatible browser wallet configured for Devnet. Use test USDC and Devnet SOL only. Run `npm test` for the client instruction/account-layout tests and `npm run build` for the frontend bundle.
 
-The client reads `VITE_SOLANA_RPC_URL` and `VITE_PROGRAM_ID` from `.env.local`; defaults point at the public Devnet RPC and a non-deployed placeholder program ID. After deployment, set the program public key in `.env.local` and restart Vite. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+The client is pinned to the public Solana Devnet RPC and Devnet USDC mint. It reads only `VITE_PROGRAM_ID` from `.env.local`; until configured, it uses the non-deployed placeholder program ID. After deployment, set the program public key in `.env.local` and restart Vite. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## On-chain flow
 
@@ -28,4 +28,4 @@ The program source is in `programs/money_link`. It uses the canonical Mainnet US
 
 The Anchor program has not been compiled or run in a validator in this environment; Rust, Solana CLI, and Anchor CLI are not installed here. The program address checked into source/config is a placeholder with no deploy keypair. The transaction builders and account layouts also need local-validator integration tests against the program before a Devnet deployment.
 
-Before real funds: generate and securely manage a program keypair, build and test against a local USDC fixture, add the full required account/authorization/race tests, deploy and verify a reviewed program, add a claim-only relayer and abuse controls, arrange independent audit and legal review, and implement a deliberate Mainnet release configuration. Do not use this code for real-value transfers yet.
+The full release gate is tracked in [docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md). Frontend unit tests and a successful bundle build do not certify the on-chain program. Do not use this code for real-value transfers yet.
