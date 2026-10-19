@@ -9,6 +9,9 @@ skip-lint = false
 [programs.localnet]
 money_link = "Aq5AQv1znmkFn5Kbr7wrdgvEvko5ppcLD7ShnaEGGFaR"
 
+[programs.devnet]
+money_link = "Aq5AQv1znmkFn5Kbr7wrdgvEvko5ppcLD7ShnaEGGFaR"
+
 [registry]
 url = "https://api.apr.dev"
 

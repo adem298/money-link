@@ -1,6 +1,6 @@
 # Developer setup
 
-The repository has two pieces: the Vite web prototype and an Anchor program in `programs/money_link`.
+The repository contains a Vite client and an Anchor program. The client is Devnet-only and has no local mock balance. It reads the connected wallet's test-USDC balance from Devnet. Create, claim, and cancel remain disabled until the Anchor program is deployed at the configured program ID.
 
 ## Frontend
 
@@ -9,34 +9,41 @@ npm install
 npm run dev
 ```
 
-The browser app is still a local simulation. It has not yet been wired to the program or a wallet adapter.
+Open `http://localhost:5173` and connect Phantom, Solflare, or another injected Solana wallet configured for **Devnet**. The client uses `https://api.devnet.solana.com` by default. Create a `.env.local` file to use a different RPC or configure the deployed program:
 
-## Solana / Anchor program
+```env
+VITE_SOLANA_RPC_URL=https://api.devnet.solana.com
+VITE_PROGRAM_ID=YOUR_DEPLOYED_PROGRAM_PUBLIC_KEY
+```
 
-Install the Rust toolchain, Solana CLI, and Anchor CLI 0.31.1 first. The current agent environment does not have these tools installed, so the program has not been compiled or tested here.
+Restart Vite after editing `.env.local`. Do not put a seed phrase, private key, or keypair secret in any `VITE_` variable.
 
-1. Generate a program keypair in the ignored build directory, then sync its public key into `Anchor.toml` and `declare_id!`:
+## Build and deploy the Devnet program
+
+Install Rust, Solana CLI, and Anchor CLI 0.31.1. They are not installed in the current agent environment, so the program source and on-chain client instructions have not yet been compiled or integration-tested here.
+
+1. Generate a program keypair, synchronize its public key into `Anchor.toml` and `declare_id!`, then build the Devnet version:
 
    ```sh
    mkdir -p target/deploy
    solana-keygen new --no-bip39-passphrase --outfile target/deploy/money_link-keypair.json
    anchor keys sync
-   ```
-
-   Keep the keypair private. Never commit it. The checked-in program address is a placeholder and has no corresponding deploy keypair.
-
-2. Build the source for the selected mint:
-
-   ```sh
-   # Mainnet USDC is the default constant.
-   anchor build
-
-   # For Devnet, build with Circle's Devnet USDC mint instead.
    anchor build -- --features devnet-usdc
    ```
 
-3. For any deployment, confirm that the selected feature, cluster, mint, program ID, upgrade authority, and frontend configuration all agree. Do not deploy the default build to a test cluster expecting Devnet USDC, or deploy the `devnet-usdc` build to Mainnet.
+   Keep the deploy keypair private. Never commit it. The checked-in program ID is a placeholder and has no corresponding keypair.
 
-## Before local transaction tests
+2. Configure a Devnet wallet you control, fund it with Devnet SOL, and deploy the feature-matched build:
 
-The checked-in Anchor config uses Localnet, but the program intentionally accepts only the selected canonical USDC mint. A local validator therefore needs a dedicated, test-only USDC mint setup or a properly isolated testing feature before positive create/claim/cancel tests can run. Do not weaken the production mint constraint just to make a test pass. The required integration tests are listed in the root README and have not been added yet.
+   ```sh
+   solana config set --url devnet
+   anchor deploy --provider.cluster devnet
+   ```
+
+3. Copy the address shown by `anchor keys list` into `.env.local` as `VITE_PROGRAM_ID`, then restart the Vite server. The frontend checks that the configured account is an executable program before enabling escrow actions.
+
+4. Obtain Circle Devnet USDC for your wallet. Both test USDC and Devnet SOL have no monetary value. The claim transaction is currently paid by the recipient wallet; a sponsored relayer is not implemented.
+
+## Before broader testing or production
+
+The current source has not been built or tested. Add a local-validator setup with a test-only USDC mint, then verify successful create/claim/cancel, wrong claim key, wrong mint, zero amount, invalid account substitution, destination mint/authority behavior, rent return, unexpected vault balance, duplicate actions, and claim/cancel races. Do not weaken the production mint constraint for tests. Production also requires independent audit, reviewed deployment artifacts, secure multisig upgrade authority, a relayer design, and jurisdiction-specific legal review.
