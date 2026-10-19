@@ -1,4 +1,9 @@
 node_modules/
 dist/
-.env*
+target/
+test-ledger/
+.anchor/
+.env
+.env.local
+.env.*.local
 .DS_Store
