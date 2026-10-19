@@ -45,6 +45,13 @@ function injectedWallet() {
   return window.phantom?.solana || window.solflare || window.solana || null;
 }
 
+function isWalletOriginSecure() {
+  if (typeof window === 'undefined') return false;
+  const hostname = window.location.hostname.toLowerCase();
+  const isLoopback = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(hostname);
+  return window.isSecureContext || isLoopback;
+}
+
 function getCurrentPath() {
   return window.location.pathname.replace(/\/$/, '') || '/';
 }
@@ -130,7 +137,7 @@ function AppHeader({ wallet, onConnect, onDisconnect, walletLoading, path, navig
           ) : (
             <button className="button button-primary connect-button" type="button" onClick={onConnect} disabled={walletLoading}>
               {walletLoading ? <LoaderCircle className="spin" size={16} /> : <Wallet size={16} />}
-              {walletLoading ? 'Connecting…' : 'Connect wallet'}
+              {walletLoading ? 'Approve in wallet…' : 'Connect wallet'}
             </button>
           )}
         </div>
@@ -453,14 +460,24 @@ export default function App() {
 
   const connectWallet = useCallback(async () => {
     setConnectError('');
+    if (!isWalletOriginSecure()) {
+      setConnectError('Wallet extensions require HTTPS or localhost. This page is open at an insecure LAN address; open http://localhost:5173 on the same computer, or serve the app over HTTPS.');
+      return;
+    }
     const provider = injectedWallet();
     if (!provider?.connect || !provider?.signTransaction) {
       setConnectError('No compatible browser wallet was found. Install Phantom or Solflare, then refresh this page.');
       return;
     }
     setWalletLoading(true);
+    let timeoutId;
     try {
-      const response = await provider.connect();
+      const response = await Promise.race([
+        Promise.resolve().then(() => provider.connect()),
+        new Promise((_, reject) => {
+          timeoutId = window.setTimeout(() => reject(new Error('Wallet did not respond within 30 seconds. Unlock Phantom or Solflare, approve the request in its popup, then retry.')), 30_000);
+        }),
+      ]);
       const publicKey = response?.publicKey || provider.publicKey;
       if (!publicKey) throw new Error('The wallet did not return a public key.');
       setWalletProvider(provider);
@@ -469,6 +486,7 @@ export default function App() {
     } catch (error) {
       setConnectError(formatError(error));
     } finally {
+      window.clearTimeout(timeoutId);
       setWalletLoading(false);
     }
   }, [notify]);
