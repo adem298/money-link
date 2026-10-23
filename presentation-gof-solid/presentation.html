@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Architecture Logicielle — Patrons GoF &amp; Principes SOLID (Java)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" crossorigin>(function(){let e=document.createElement(`link`).relList;if(e&&e.supports&&e.supports(`modulepreload`))return;for(let e of document.querySelectorAll(`link[rel="modulepreload"]`))n(e);new MutationObserver(e=>{for(let t of e)if(t.type===`childList`)for(let e of t.addedNodes)e.tagName===`LINK`&&e.rel===`modulepreload`&&n(e)}).observe(document,{childList:!0,subtree:!0});function t(e){let t={};return e.integrity&&(t.integrity=e.integrity),e.referrerPolicy&&(t.referrerPolicy=e.referrerPolicy),t.credentials=e.crossOrigin===`use-credentials`?`include`:e.crossOrigin===`anonymous`?`omit`:`same-origin`,t}function n(e){if(e.ep)return;e.ep=!0;let n=t(e);fetch(e.href,n)}})();var e=[{id:`intro`,label:`01 · Intro`,startSlide:0},{id:`solid`,label:`02 · SOLID`,startSlide:2},{id:`gof-overview`,label:`03 · GoF Taxonomie`,startSlide:8},{id:`creational`,label:`04 · Singleton & Factory`,startSlide:9},{id:`behavioral-structural`,label:`05 · Strategy · Decorator · Observer`,startSlide:11},{id:`synthesis`,label:`06 · Synergie & Quiz`,startSlide:14}],t=[{id:`cover`,chapter:`intro`,layout:`cover`,kicker:`COURS D’ARCHITECTURE & GÉNIE LOGICIEL · JAVA OOP`,titlePlain:`Principes `,titleAura:`SOLID & Patrons GoF`,subtitle:`Concevoir des architectures orientées objet modulaires, extensibles et maintenables en Java : des 5 fondements SOLID aux 5 patrons incontournables du Gang of Four.`,chips:[`S · O · L · I · D`,`Singleton`,`Factory`,`Strategy`,`Decorator`,`Observer`,`UML 2.0 + Java`],diagram:`heroArchitecture`,speakerNotes:`Introduction orale : « Bonjour à tous. Aujourd’hui nous allons voir comment passer d’un code orienté objet qui fonctionne simplement à une véritable architecture logicielle professionnelle en Java, grâce aux 5 principes SOLID et aux 5 patrons majeurs du Gang of Four : Singleton, Factory, Strategy, Decorator et Observer. »`},{id:`why-architecture`,chapter:`intro`,layout:`split`,eyebrow:`01 · Problématique Architecturale`,badge:`Fondations`,titlePlain:`Pourquoi associer `,titleAura:`SOLID et les Patrons GoF ?`,subtitle:`Un logiciel passe plus de 80 % de sa vie en maintenance et évolution. Sans architecture, chaque nouvelle fonctionnalité casse l’existant.`,leftCard:{label:`DIAGNOSTIC DU CODE SPAGHETTI`,title:`Les 4 symptômes d’une mauvaise conception POO`,bullets:[`Rigidité : modifier un détail force à recompiler et retester des dizaines de classes.`,`Fragilité : corriger un bug dans un module provoque des régressions ailleurs.`,`Immobilité : impossible de réutiliser un composant tant il est couplé au reste.`,`Viscosité : faire un hack rapide devient plus facile que suivre une structure propre.`],callouts:[{type:`info`,title:`SOLID = Le Diagnostic (Quoi respecter)`,body:`5 principes de conception (Robert C. Martin) qui guident le découpage des classes et des interfaces.`},{type:`good`,title:`GoF = Les Solutions (Comment structurer)`,body:`Catalogue de 23 solutions réutilisables (1994) qui concrétisent les principes SOLID en pratique.`}]},tabs:[{id:`couplage-bad`,label:`❌ Couplage Fort`,kind:`bad`,code:`// Anti-pattern classique : tout est figé et entremêlé
+public class OrderProcessor {
+
+    public void process(String type, double amount) {
+        // 1. Instanciation directe -> couplage fort
+        MySqlDatabase db = new MySqlDatabase();
+        db.save(amount);
+
+        // 2. Cascade de if/else -> fermé à l'extension
+        if (type.equals("CARD")) {
+            System.out.println("Paiement Carte : " + amount);
+        } else if (type.equals("PAYPAL")) {
+            System.out.println("Paiement PayPal : " + amount);
+        }
+
+        // 3. Notification figée en dur
+        SmtpMailer mailer = new SmtpMailer();
+        mailer.sendEmail("Commande validée");
+    }
+}`},{id:`couplage-good`,label:`✅ Architecture SOLID + GoF`,kind:`good`,code:`// Architecture découplée combinant DIP, Strategy et Observer
+public class OrderProcessor {
+    private final OrderRepository repository;      // DIP
+    private final List<OrderObserver> observers;   // Observer
+
+    public OrderProcessor(OrderRepository repository,
+                          List<OrderObserver> observers) {
+        this.repository = repository;
+        this.observers = observers;
+    }
+
+    public void process(Order order, PaymentStrategy payment) {
+        payment.pay(order.getTotal());             // Strategy (OCP)
+        repository.save(order);                    // SRP + DIP
+        observers.forEach(o -> o.onOrderPaid(order));
+    }
+}`}],speakerNotes:`Point clé : insistez sur la complémentarité ! SOLID fixe les règles d’hygiène objet (faible couplage, forte cohésion), tandis que les patrons GoF sont les plans d’assemblage concrets qui appliquent ces règles.`},{id:`solid-overview`,chapter:`solid`,layout:`pillars`,eyebrow:`02 · Principes de Conception Orientée Objet`,badge:`Robert C. Martin`,titlePlain:`Les 5 Piliers `,titleAura:`S · O · L · I · D`,subtitle:`Cliquez sur une carte pour accéder directement à son étude détaillée avec diagramme UML et code Java avant/après.`,pillars:[{letter:`S`,name:`Single Responsibility`,fr:`Responsabilité Unique`,summary:`Une classe ne doit avoir qu’une seule et unique raison de changer.`,targetSlide:3},{letter:`O`,name:`Open / Closed`,fr:`Ouvert / Fermé`,summary:`Ouvert à l’extension par polymorphisme, fermé à la modification du code existant.`,targetSlide:4},{letter:`L`,name:`Liskov Substitution`,fr:`Substitution de Liskov`,summary:`Tout sous-type doit pouvoir remplacer son type parent sans altérer la cohérence.`,targetSlide:5},{letter:`I`,name:`Interface Segregation`,fr:`Ségrégation des Interfaces`,summary:`Mieux vaut plusieurs petites interfaces ciblées qu’une interface « fourre-tout ».`,targetSlide:6},{letter:`D`,name:`Dependency Inversion`,fr:`Inversion des Dépendances`,summary:`Dépendre d’abstractions (interfaces), jamais d’implémentations concrètes.`,targetSlide:7}],bottomBanner:`Objectif global de SOLID : Haute Cohésion interne + Faible Couplage entre modules + Testabilité unitaire maximale.`,speakerNotes:`Transition : présentez brièvement l’acronyme popularisé par Robert C. Martin (« Uncle Bob »), puis détaillez chacun des 5 principes avec un contre-exemple et sa refactorisation Java.`},{id:`solid-srp`,chapter:`solid`,layout:`split`,eyebrow:`Principes SOLID · [S] — 1 / 5`,badge:`SRP`,titlePlain:`Single Responsibility `,titleAura:`Principle (SRP)`,subtitle:`« Une classe ne doit avoir qu’une seule raison de changer, c’est-à-dire une seule responsabilité métier ou technique. »`,diagram:`srp`,leftCard:{label:`ANALYSE DU PRINCIPE`,title:`Séparer le calcul métier, l’affichage et la persistance`,bullets:[`Problème (« God Class ») : si le format PDF ou le SGBD change, on modifie la classe métier.`,`Solution : extraire chaque responsabilité dans une classe dédiée à forte cohésion.`,`Gain direct : classes courtes, réutilisables et faciles à tester isolément.`]},tabs:[{id:`srp-good`,label:`✅ Respect SRP (Java)`,kind:`good`,code:`// 1. Logique métier pure
+public class Report {
+    private final String title;
+    private final List<Double> values;
+
+    public Report(String title, List<Double> values) {
+        this.title = title;
+        this.values = values;
+    }
+
+    public double average() {
+        return values.stream().mapToDouble(Double::doubleValue)
+                     .average().orElse(0.0);
+    }
+    public String getTitle() { return title; }
+}
+
+// 2. Mise en forme dédiée
+public class ReportPdfFormatter {
+    public byte[] toPdf(Report r) {
+        return ("PDF: " + r.getTitle() + " = " + r.average()).getBytes();
+    }
+}
+
+// 3. Persistance dédiée
+public class ReportRepository {
+    public void save(Report r) { /* INSERT SQL... */ }
+}`},{id:`srp-bad`,label:`❌ Violation SRP`,kind:`bad`,code:`// ❌ 3 acteurs / raisons de changer dans UNE seule classe !
+public class ReportManager {
+    private String title;
+    private List<Double> values;
+
+    // Raison 1 : Règle de calcul statistique change
+    public double calculateAverage() {
+        return values.stream().mapToDouble(d -> d).average().orElse(0);
+    }
+
+    // Raison 2 : Charte graphique PDF change
+    public byte[] exportToPdf() {
+        System.out.println("Génération PDF de " + title);
+        return new byte[0];
+    }
+
+    // Raison 3 : Base de données SQL change
+    public void saveToMySql() {
+        System.out.println("INSERT INTO reports VALUES (...)");
+    }
+}`}],speakerNotes:`Astuce d’examen : « Une seule raison de changer » ne veut pas dire « une seule méthode », mais un seul axe d’évolution / un seul acteur métier.`},{id:`solid-ocp`,chapter:`solid`,layout:`split`,eyebrow:`Principes SOLID · [O] — 2 / 5`,badge:`OCP`,titlePlain:`Open / Closed `,titleAura:`Principle (OCP)`,subtitle:`« Les entités logicielles doivent être ouvertes à l’extension, mais fermées à la modification. » (Bertrand Meyer / R. Martin)`,diagram:`ocp`,leftCard:{label:`LEVIER POLYMORPHIQUE`,title:`Ajouter un comportement = créer une classe, pas éditer un switch`,bullets:[`Symptôme de violation : de longs blocs if / else if ou switch sur le type d’un objet.`,`Mécanisme Java : abstraire le point de variation derrière une interface.`,`Lien direct GoF : les patrons Strategy et Decorator reposent directement sur OCP.`]},tabs:[{id:`ocp-good`,label:`✅ Respect OCP (Java)`,kind:`good`,code:`public interface DiscountPolicy {
+    double apply(double amount);
+}
+
+public class StudentDiscount implements DiscountPolicy {
+    public double apply(double amount) { return amount * 0.85; }
+}
+
+public class VipDiscount implements DiscountPolicy {
+    public double apply(double amount) { return amount * 0.70; }
+}
+
+// Extension : nouvelle promo SANS toucher PriceCalculator !
+public class BlackFridayDiscount implements DiscountPolicy {
+    public double apply(double amount) { return amount * 0.50; }
+}
+
+// Fermé à la modification, ouvert à toute future politique
+public class PriceCalculator {
+    public double finalPrice(double amount, DiscountPolicy policy) {
+        return policy.apply(amount);
+    }
+}`},{id:`ocp-bad`,label:`❌ Violation OCP`,kind:`bad`,code:`// ❌ Chaque nouvelle promotion oblige à modifier et retester cette classe
+public class PriceCalculator {
+
+    public double finalPrice(double amount, String customerType) {
+        if ("STUDENT".equals(customerType)) {
+            return amount * 0.85;
+        } else if ("VIP".equals(customerType)) {
+            return amount * 0.70;
+        } else if ("BLACK_FRIDAY".equals(customerType)) {
+            // Modification risquée du code déjà en production !
+            return amount * 0.50;
+        }
+        return amount;
+    }
+}`}],speakerNotes:`Montrez le rectangle vert en pointillés sur le diagramme UML : on ajoute BlackFridayDiscount sans toucher une seule ligne de PriceCalculator.`},{id:`solid-lsp`,chapter:`solid`,layout:`split`,eyebrow:`Principes SOLID · [L] — 3 / 5`,badge:`LSP`,titlePlain:`Liskov Substitution `,titleAura:`Principle (LSP)`,subtitle:`« Si S est un sous-type de T, tout objet de type T peut être remplacé par un objet de type S sans casser les invariants du programme. » (Barbara Liskov)`,diagram:`lsp`,leftCard:{label:`CONTRAT COMPORTEMENTAL`,title:`« Est-un » mathématique ≠ « Hérite-de » valide en POO`,bullets:[`Piège célèbre : faire hériter Square de Rectangle mutable casse l’invariant largeur × hauteur.`,`Autre violation typique : lever UnsupportedOperationException dans une méthode redéfinie.`,`Règle : n’hériter que lorsque le sous-type respecte 100 % du contrat du parent.`]},tabs:[{id:`lsp-good`,label:`✅ Respect LSP (Java)`,kind:`good`,code:`// Contrat commun immuable et sans effet de bord trompeur
+public interface Shape {
+    int area();
+}
+
+public final class Rectangle implements Shape {
+    private final int width;
+    private final int height;
+
+    public Rectangle(int width, int height) {
+        this.width = width;
+        this.height = height;
+    }
+    @Override
+    public int area() { return width * height; }
+}
+
+public final class Square implements Shape {
+    private final int side;
+
+    public Square(int side) { this.side = side; }
+
+    @Override
+    public int area() { return side * side; }
+}`},{id:`lsp-bad`,label:`❌ Violation LSP`,kind:`bad`,code:`class Rectangle {
+    protected int width, height;
+    public void setWidth(int w)  { this.width = w; }
+    public void setHeight(int h) { this.height = h; }
+    public int area() { return width * height; }
+}
+
+class Square extends Rectangle {
+    @Override
+    public void setWidth(int w)  { this.width = w; this.height = w; }
+    @Override
+    public void setHeight(int h) { this.width = h; this.height = h; }
+}
+
+// ❌ Test client cassé lorsqu'on passe new Square() :
+void verifyArea(Rectangle r) {
+    r.setWidth(5);
+    r.setHeight(4);
+    // Attendu : 20, mais Square renvoie 16 ! Contrat brisé !
+    assert r.area() == 20;
+}`}],speakerNotes:`Exemple incontournable en cours de POO : en géométrie un carré est un rectangle, mais un objet Square mutable ne se comporte PAS comme un objet Rectangle mutable.`},{id:`solid-isp`,chapter:`solid`,layout:`split`,eyebrow:`Principes SOLID · [I] — 4 / 5`,badge:`ISP`,titlePlain:`Interface Segregation `,titleAura:`Principle (ISP)`,subtitle:`« Aucun client ne doit être forcé de dépendre de méthodes qu’il n’utilise pas. »`,diagram:`isp`,leftCard:{label:`COHÉSION DES CONTRATS`,title:`Découper les interfaces « obèses » en interfaces de rôle`,bullets:[`Problème : une grosse interface oblige les classes simples à coder des méthodes vides ou en erreur.`,`En Java : une classe peut implémenter plusieurs interfaces fines (implements Printable, Scannable).`,`Lien direct avec LSP : évite de lancer des UnsupportedOperationException.`]},tabs:[{id:`isp-good`,label:`✅ Respect ISP (Java)`,kind:`good`,code:`public interface Printable { void print(String doc); }
+public interface Scannable { String scan(); }
+public interface Faxable   { void fax(String doc); }
+
+// Une imprimante d'entrée de gamme n'implémente QUE son besoin
+public class BasicPrinter implements Printable {
+    @Override
+    public void print(String doc) {
+        System.out.println("Impression : " + doc);
+    }
+}
+
+// Un photocopieur pro combine les contrats nécessaires
+public class OfficeMultifunction implements Printable, Scannable, Faxable {
+    public void print(String doc) { System.out.println("Print: " + doc); }
+    public String scan()          { return "Contenu scanné"; }
+    public void fax(String doc)   { System.out.println("Fax: " + doc); }
+}`},{id:`isp-bad`,label:`❌ Violation ISP`,kind:`bad`,code:`// ❌ Interface « polluée » trop large
+public interface Machine {
+    void print(String doc);
+    String scan();
+    void fax(String doc);
+}
+
+public class BasicPrinter implements Machine {
+    @Override
+    public void print(String doc) {
+        System.out.println("Impression : " + doc);
+    }
+
+    @Override
+    public String scan() {
+        // ❌ Forcé d'implémenter une méthode inutile !
+        throw new UnsupportedOperationException("Pas de scanner !");
+    }
+
+    @Override
+    public void fax(String doc) {
+        throw new UnsupportedOperationException("Pas de fax !");
+    }
+}`}],speakerNotes:`Rappelez que Java n’autorise pas l’héritage multiple de classes, mais autorise l’implémentation multiple d’interfaces : ISP exploite pleinement cette force du langage Java.`},{id:`solid-dip`,chapter:`solid`,layout:`split`,eyebrow:`Principes SOLID · [D] — 5 / 5`,badge:`DIP`,titlePlain:`Dependency Inversion `,titleAura:`Principle (DIP)`,subtitle:`« 1. Les modules de haut niveau ne doivent pas dépendre des modules de bas niveau. 2. Tous deux doivent dépendre d’abstractions. »`,diagram:`dip`,leftCard:{label:`INJECTION DE DÉPENDANCES`,title:`Inverser le sens des flèches grâce aux interfaces`,bullets:[`Haut niveau = logique métier (OrderService, la valeur ajoutée de l’application).`,`Bas niveau = détails techniques (MySQL, SMTP, API SMS, système de fichiers).`,`En injectant l’interface par le constructeur, on peut brancher un Mock en test en 1 ligne !`]},tabs:[{id:`dip-good`,label:`✅ Respect DIP (Java)`,kind:`good`,code:`// Abstraction possédée par la couche métier
+public interface MessageSender {
+    void send(String recipient, String content);
+}
+
+public class SmtpEmailSender implements MessageSender {
+    public void send(String to, String msg) {
+        System.out.println("[SMTP] Email envoyé à " + to + " : " + msg);
+    }
+}
+
+public class TwilioSmsSender implements MessageSender {
+    public void send(String to, String msg) {
+        System.out.println("[SMS] SMS envoyé à " + to + " : " + msg);
+    }
+}
+
+// Haut niveau totalement indépendant du détail technique !
+public class OrderService {
+    private final MessageSender sender;
+
+    public OrderService(MessageSender sender) { // Injection
+        this.sender = sender;
+    }
+
+    public void confirmOrder(String client) {
+        sender.send(client, "Votre commande est confirmée !");
+    }
+}`},{id:`dip-bad`,label:`❌ Violation DIP`,kind:`bad`,code:`public class SmtpEmailSender {
+    public void sendEmail(String to, String msg) {
+        System.out.println("Envoi SMTP vers " + to);
+    }
+}
+
+public class OrderService {
+    // ❌ Dépendance rigide sur une implémentation concrète bas niveau !
+    private final SmtpEmailSender emailSender = new SmtpEmailSender();
+
+    public void confirmOrder(String client) {
+        // Impossible de passer aux SMS ni de tester sans serveur SMTP !
+        emailSender.sendEmail(client, "Votre commande est confirmée !");
+    }
+}`}],speakerNotes:`Transition vers GoF : « Maintenant que nous voyons qu’il ne faut plus faire des new Concret() partout (DIP) ni des if/else (OCP), comment organiser concrètement nos objets ? C’est exactement le rôle des Patrons GoF ! »`},{id:`gof-taxonomy`,chapter:`gof-overview`,layout:`taxonomy`,eyebrow:`03 · Gang of Four (Gamma, Helm, Johnson, Vlissides — 1994)`,badge:`23 Patrons → 5 Essentiels`,titlePlain:`Classification des `,titleAura:`Patrons de Conception GoF`,subtitle:`Un Design Pattern est une solution éprouvée et réutilisable à un problème récurrent de conception orientée objet.`,families:[{tag:`FAMILLE 1 · CRÉATION (5 patrons GoF)`,title:`Patrons Créationnels`,desc:`Abstraient et contrôlent le processus d’instanciation des objets pour éliminer le couplage au mot-clé new.`,patterns:[{name:`Singleton`,focus:`Garantir une instance unique et un point d’accès global contrôlé.`,slide:9},{name:`Factory`,focus:`Déléguer la création d’objets polymorphes sans exposer leurs classes concrètes.`,slide:10}],others:`Autres : Abstract Factory, Builder, Prototype`},{tag:`FAMILLE 2 · STRUCTURE (7 patrons GoF)`,title:`Patrons Structurels`,desc:`Assemblent des classes et des objets en structures plus larges tout en gardant souplesse et efficacité.`,patterns:[{name:`Decorator`,focus:`Attacher dynamiquement de nouvelles responsabilités à un objet par enveloppement.`,slide:12}],others:`Autres : Adapter, Facade, Composite, Proxy, Bridge, Flyweight`},{tag:`FAMILLE 3 · COMPORTEMENT (11 patrons GoF)`,title:`Patrons Comportementaux`,desc:`Organisent la communication, les algorithmes et la répartition des responsabilités entre objets.`,patterns:[{name:`Strategy`,focus:`Encapsuler une famille d’algorithmes et les rendre interchangeables à l’exécution.`,slide:11},{name:`Observer`,focus:`Notifier automatiquement plusieurs objets abonnés lors d’un changement d’état.`,slide:13}],others:`Autres : Command, Iterator, State, Template Method, Mediator...`}],speakerNotes:`Cite les 4 auteurs du livre fondateur de 1994 (« Design Patterns: Elements of Reusable Object-Oriented Software ») : Erich Gamma, Richard Helm, Ralph Johnson et John Vlissides — surnommés le Gang of Four (GoF).`},{id:`gof-singleton`,chapter:`creational`,layout:`split`,eyebrow:`Patron GoF #1 · Famille Création`,badge:`Singleton`,titlePlain:`Patron `,titleAura:`Singleton`,subtitle:`Garantir qu’une classe ne possède qu’une seule instance en mémoire JVM et fournir un point d’accès global unique à celle-ci.`,diagram:`singleton`,simulator:`singleton`,leftCard:{label:`FICHE ARCHITECTURALE`,title:`Mécanisme en 3 règles Java strictes`,bullets:[`1. Constructeur private : interdit tout appel externe à new DatabaseConnection().`,`2. Attribut private static volatile : stocke l’unique référence partagée.`,`3. Méthode public static getInstance() : instancie paresseusement (lazy) de façon Thread-Safe.`],callouts:[{type:`good`,title:`Cas d’usage typiques`,body:`Pool de connexion BDD, Configuration globale, Logger central, Runtime.getRuntime().`},{type:`bad`,title:`Vigilance SOLID !`,body:`Abuser du Singleton crée un état global caché qui complique les tests unitaires (tension SRP/DIP).`}]},tabs:[{id:`singleton-java`,label:`DatabaseConnection.java`,kind:`good`,code:`public final class DatabaseConnection {
+
+    // volatile garantit la visibilité mémoire entre threads JVM
+    private static volatile DatabaseConnection instance;
+
+    // 1. Constructeur privé : empêche 'new DatabaseConnection()'
+    private DatabaseConnection() {
+        System.out.println("Initialisation unique de la connexion...");
+    }
+
+    // 2. Double-Checked Locking (Thread-Safe & performant)
+    public static DatabaseConnection getInstance() {
+        if (instance == null) {
+            synchronized (DatabaseConnection.class) {
+                if (instance == null) {
+                    instance = new DatabaseConnection();
+                }
+            }
+        }
+        return instance;
+    }
+
+    public void query(String sql) {
+        System.out.println("[SQL] " + sql);
+    }
+}`},{id:`singleton-usage`,label:`Main.java`,kind:`default`,code:`public class Main {
+    public static void main(String[] args) {
+        // new DatabaseConnection(); // ❌ Erreur de compilation !
+
+        DatabaseConnection db1 = DatabaseConnection.getInstance();
+        DatabaseConnection db2 = DatabaseConnection.getInstance();
+
+        db1.query("SELECT * FROM students");
+
+        // Preuve d'unicité de la référence en mémoire :
+        System.out.println(db1 == db2); // true (même adresse JVM !)
+    }
+}`}],speakerNotes:`Astuce bonus pour impressionner le prof : mentionnez le mot-clé volatile du Double-Checked Locking en Java, et cliquez sur l’onglet « ▶ Démo Live » pour prouver que db1 == db2 renvoie la même adresse mémoire @7a81197d !`},{id:`gof-factory`,chapter:`creational`,layout:`split`,eyebrow:`Patron GoF #2 · Famille Création`,badge:`Factory`,titlePlain:`Patron `,titleAura:`Factory (Fabrique)`,subtitle:`Centraliser et encapsuler la création d’objets polymorphes pour que le code client ne dépende que de l’interface commune.`,diagram:`factory`,simulator:`factory`,leftCard:{label:`DÉCOUPLAGE DE L’INSTANCIATION`,title:`Séparer l’utilisation d’un objet de sa fabrication`,bullets:[`Problème : disperser new EmailNotification() dans 40 classes rend toute évolution coûteuse.`,`Solution : le client demande une Notification à la fabrique sans connaître la classe concrète.`,`Évolution Factory Method (GoF pur) : des sous-classes de Creator redéfinissent createNotification() pour respecter pleinement OCP.`]},tabs:[{id:`factory-java`,label:`NotificationFactory.java`,kind:`good`,code:`public interface Notification {
+    void notifyUser(String message);
+}
+
+class EmailNotification implements Notification {
+    public void notifyUser(String msg) {
+        System.out.println("[EMAIL] Envoi SMTP : " + msg);
+    }
+}
+
+class SmsNotification implements Notification {
+    public void notifyUser(String msg) {
+        System.out.println("[SMS] Envoi opérateur : " + msg);
+    }
+}
+
+class PushNotification implements Notification {
+    public void notifyUser(String msg) {
+        System.out.println("[PUSH] Notification mobile : " + msg);
+    }
+}
+
+public class NotificationFactory {
+    public static Notification create(String channel) {
+        return switch (channel.toUpperCase()) {
+            case "EMAIL" -> new EmailNotification();
+            case "SMS"   -> new SmsNotification();
+            case "PUSH"  -> new PushNotification();
+            default -> throw new IllegalArgumentException("Canal inconnu");
+        };
+    }
+}`},{id:`factory-method-gof`,label:`FactoryMethod (GoF pur)`,kind:`default`,code:`// Variante Factory Method 100 % conforme à Open/Closed (OCP) :
+public abstract class NotificationCreator {
+
+    // La « Factory Method » abstraite déléguée aux sous-classes
+    protected abstract Notification createNotification();
+
+    public void sendAlert(String message) {
+        Notification notif = createNotification();
+        notif.notifyUser(message);
+    }
+}
+
+public class EmailCreator extends NotificationCreator {
+    @Override
+    protected Notification createNotification() {
+        return new EmailNotification();
+    }
+}
+
+public class SmsCreator extends NotificationCreator {
+    @Override
+    protected Notification createNotification() {
+        return new SmsNotification();
+    }
+}`}],speakerNotes:`Très apprécié à l’oral : distinguez clairement la Simple Factory (méthode statique switch très courante) et la Factory Method GoF (classe abstraite NotificationCreator + sous-classes) disponible dans le 2e onglet !`},{id:`gof-strategy`,chapter:`behavioral-structural`,layout:`split`,eyebrow:`Patron GoF #3 · Famille Comportement`,badge:`Strategy`,titlePlain:`Patron `,titleAura:`Strategy`,subtitle:`Définir une famille d’algorithmes, encapsuler chacun dans sa propre classe et les rendre interchangeables à chaud (au runtime).`,diagram:`strategy`,simulator:`strategy`,leftCard:{label:`COMPOSITION > HÉRITAGE`,title:`Remplacer les conditions complexes par le polymorphisme`,bullets:[`Participants : Context (ShoppingCart), interface Strategy (PaymentStrategy) et ConcreteStrategies.`,`Flexibilité : le contexte peut changer de stratégie en cours d’exécution via setStrategy().`,`Exemple réel Java JDK : Collections.sort(list, comparator) où Comparator<T> est une Strategy !`]},tabs:[{id:`strategy-java`,label:`PaymentStrategy.java`,kind:`good`,code:`public interface PaymentStrategy {
+    void pay(double amount);
+}
+
+public class CardStrategy implements PaymentStrategy {
+    private final String maskedCard;
+    public CardStrategy(String maskedCard) { this.maskedCard = maskedCard; }
+
+    public void pay(double amount) {
+        System.out.println(amount + " € payés par Carte " + maskedCard);
+    }
+}
+
+public class PayPalStrategy implements PaymentStrategy {
+    private final String email;
+    public PayPalStrategy(String email) { this.email = email; }
+
+    public void pay(double amount) {
+        System.out.println(amount + " € réglés via PayPal (" + email + ")");
+    }
+}
+
+public class ShoppingCart {
+    private PaymentStrategy strategy;
+
+    public void setStrategy(PaymentStrategy strategy) {
+        this.strategy = strategy; // Changement dynamique au runtime !
+    }
+
+    public void checkout(double total) {
+        strategy.pay(total);
+    }
+}`},{id:`strategy-lambda`,label:`Java Moderne (Lambda)`,kind:`default`,code:`public class Main {
+    public static void main(String[] args) {
+        ShoppingCart cart = new ShoppingCart();
+
+        // 1. Paiement classique par Carte
+        cart.setStrategy(new CardStrategy("**** 4242"));
+        cart.checkout(120.0);
+
+        // 2. Changement d'algorithme à chaud sur le MÊME panier !
+        cart.setStrategy(new PayPalStrategy("etudiant@univ.tn"));
+        cart.checkout(85.5);
+
+        // 3. Comme PaymentStrategy est une @FunctionalInterface :
+        cart.setStrategy(amount ->
+            System.out.println(amount + " € payés en Crypto Web3"));
+        cart.checkout(250.0);
+    }
+}`}],speakerNotes:`Soulignez le lien avec Java 8+ : comme PaymentStrategy n’a qu’une seule méthode abstraite, c’est aussi une interface fonctionnelle utilisable avec une expression lambda !`},{id:`gof-decorator`,chapter:`behavioral-structural`,layout:`split`,eyebrow:`Patron GoF #4 · Famille Structure`,badge:`Decorator`,titlePlain:`Patron `,titleAura:`Decorator (Wrapper)`,subtitle:`Attacher dynamiquement des fonctionnalités supplémentaires à un objet en l’enveloppant dans des objets décorateurs partageant la même interface.`,diagram:`decorator`,simulator:`decorator`,leftCard:{label:`EMPILEMENT DYNAMIQUE (« POUPÉES RUSSES »)`,title:`Éviter l’explosion combinatoire de sous-classes`,bullets:[`Sans Decorator : EncryptedFile, CompressedFile, EncryptedAndCompressedFile... explosion de classes !`,`Astuce clé : le décorateur implémente DataSource ET contient un attribut DataSource wrappee.`,`Exemple réel Java JDK : new BufferedInputStream(new FileInputStream("data.bin")) !`]},tabs:[{id:`decorator-java`,label:`DataSourceDecorator.java`,kind:`good`,code:`public interface DataSource {
+    void writeData(String data);
+}
+
+public class FileDataSource implements DataSource {
+    private final String filename;
+    public FileDataSource(String filename) { this.filename = filename; }
+    public void writeData(String data) {
+        System.out.println("Écriture dans " + filename + " -> " + data);
+    }
+}
+
+public abstract class DataSourceDecorator implements DataSource {
+    protected final DataSource wrappee;
+    protected DataSourceDecorator(DataSource s) { this.wrappee = s; }
+}
+
+public class CompressionDecorator extends DataSourceDecorator {
+    public CompressionDecorator(DataSource s) { super(s); }
+    public void writeData(String data) {
+        super.wrappee.writeData("ZIP(" + data + ")");
+    }
+}
+
+public class EncryptionDecorator extends DataSourceDecorator {
+    public EncryptionDecorator(DataSource s) { super(s); }
+    public void writeData(String data) {
+        super.wrappee.writeData("AES256[" + data + "]");
+    }
+}`},{id:`decorator-usage`,label:`Main.java (Empilement)`,kind:`default`,code:`public class Main {
+    public static void main(String[] args) {
+        // Combinaison sur-mesure à l'exécution :
+        DataSource pipeline = new EncryptionDecorator(
+                                  new CompressionDecorator(
+                                      new FileDataSource("rapport.txt")
+                                  )
+                              );
+
+        // Chiffre -> Compresse -> Écrit sur disque, de façon transparente !
+        pipeline.writeData("Notes_Examen_Architecture");
+    }
+}`}],speakerNotes:`Ne manquez surtout pas l’onglet « ▶ Démo Live » ici : cochez/décochez Compression, Chiffrement AES et Base64 en direct devant la classe pour voir le code Java d’enveloppement et la transformation de la donnée en temps réel !`},{id:`gof-observer`,chapter:`behavioral-structural`,layout:`split`,eyebrow:`Patron GoF #5 · Famille Comportement`,badge:`Observer`,titlePlain:`Patron `,titleAura:`Observer (Publish / Subscribe)`,subtitle:`Définir une dépendance 1-vers-N entre objets afin que, lorsqu’un Sujet change d’état, tous ses Observateurs abonnés soient notifiés automatiquement.`,diagram:`observer`,simulator:`observer`,leftCard:{label:`ARCHITECTURE ÉVÉNEMENTIELLE RÉACTIVE`,title:`Supprimer l’attente active (polling) et découpler l’émetteur`,bullets:[`Subject (Observable) : maintient une List<Observer> et expose subscribe(), unsubscribe(), notify().`,`Faible couplage : le Sujet ignore tout des classes concrètes qui l’écoutent.`,`Omniprésent : boutons Swing/JavaFX (ActionListener), MVC, Spring Events, RxJava.`]},tabs:[{id:`observer-java`,label:`WeatherStation.java`,kind:`good`,code:`public interface Observer {
+    void update(double temperature);
+}
+
+public class WeatherStation {
+    private final List<Observer> observers = new ArrayList<>();
+    private double temperature;
+
+    public void subscribe(Observer obs)   { observers.add(obs); }
+    public void unsubscribe(Observer obs) { observers.remove(obs); }
+
+    public void setTemperature(double newTemp) {
+        this.temperature = newTemp;
+        notifyObservers(); // Diffusion automatique !
+    }
+
+    private void notifyObservers() {
+        for (Observer obs : observers) {
+            obs.update(this.temperature);
+        }
+    }
+}
+
+public class PhoneDisplay implements Observer {
+    public void update(double temp) {
+        System.out.println("[Mobile] Nouvelle météo : " + temp + " °C");
+    }
+}`},{id:`observer-usage`,label:`Main.java`,kind:`default`,code:`public class Main {
+    public static void main(String[] args) {
+        WeatherStation station = new WeatherStation();
+
+        Observer phone = new PhoneDisplay();
+        Observer alert = temp -> {
+            if (temp >= 35.0) {
+                System.out.println("[ALERTE CANICULE] " + temp + " °C !");
+            }
+        };
+
+        station.subscribe(phone);
+        station.subscribe(alert);
+
+        station.setTemperature(24.5); // Notifie phone + alert
+        station.unsubscribe(phone);   // Désabonnement dynamique !
+        station.setTemperature(38.0); // Notifie uniquement alert
+    }
+}`}],speakerNotes:`Montrez avec le simulateur comment on peut abonner et désabonner des observateurs à chaud sans jamais arrêter ni modifier la classe WeatherStation (respect parfait de OCP et DIP).`},{id:`synergy-matrix`,chapter:`synthesis`,layout:`matrix`,eyebrow:`06 · Vision Synthétique & Analyse Critique`,badge:`GoF × SOLID`,titlePlain:`Comment chaque Patron GoF `,titleAura:`met en œuvre SOLID`,subtitle:`Tableau de synthèse croisant nos 5 patrons GoF avec les principes SOLID et leurs implémentations réelles dans la bibliothèque standard Java (JDK).`,rows:[{pattern:`Singleton`,family:`Création`,solidStatus:`warn`,solidLabel:`⚠️ Tension SRP / DIP`,solidExplain:`Gère son cycle de vie + son métier (2 responsabilités) et crée un couplage global statique.`,jdkExample:`Runtime.getRuntime(), Desktop.getDesktop()`},{pattern:`Factory`,family:`Création`,solidStatus:`yes`,solidLabel:`✅ SRP · OCP · DIP`,solidExplain:`Isole la logique de construction (SRP) et fait dépendre le client d’une interface produit (DIP).`,jdkExample:`Calendar.getInstance(), List.of(), NumberFormat`},{pattern:`Strategy`,family:`Comportement`,solidStatus:`yes`,solidLabel:`✅ SRP · OCP · LSP · DIP`,solidExplain:`Chaque algorithme a sa classe (SRP) ; nouveau calcul ajouté sans toucher au Context (OCP).`,jdkExample:`java.util.Comparator<T>, javax.swing.LayoutManager`},{pattern:`Decorator`,family:`Structure`,solidStatus:`yes`,solidLabel:`✅ SRP · OCP · LSP`,solidExplain:`Enrichit un objet par couches fines (SRP) sans modifier la classe de base (OCP) tout en restant substituable (LSP).`,jdkExample:`java.io.BufferedInputStream, Collections.unmodifiableList()`},{pattern:`Observer`,family:`Comportement`,solidStatus:`yes`,solidLabel:`✅ OCP · ISP · DIP`,solidExplain:`Le Sujet dépend de l’interface Observer (DIP) et accepte un nombre illimité de nouveaux écouteurs (OCP).`,jdkExample:`ActionListener, PropertyChangeListener, Flow.Publisher`}],speakerNotes:`Cette slide fait toujours la différence devant un jury : souligner que Singleton est en tension avec SRP et DIP montre un vrai recul critique d’ingénieur plutôt qu’une récitation par cœur !`},{id:`quiz-conclusion`,chapter:`synthesis`,layout:`conclusion`,eyebrow:`07 · Validation des Acquis & Conclusion`,badge:`Q&R Interactive`,titlePlain:`Quiz Express & `,titleAura:`Règles d’Or à Retenir`,subtitle:`Testez la reconnaissance des patrons sur des cas concrets de cours, puis retenez les 3 maximes fondamentales du Génie Logiciel.`,maxims:[{num:`01`,title:`Programmer vers une interface, pas une implémentation`,body:`Déclarez toujours vos variables et paramètres avec le type abstrait (List, Notification, PaymentStrategy) pour préserver l’évolutivité (DIP / LSP).`},{num:`02`,title:`Privilégier la composition d’objets à l’héritage de classes`,body:`Strategy et Decorator prouvent que déléguer le travail à un objet injecté est bien plus flexible à l’exécution qu’une hiérarchie figée.`},{num:`03`,title:`Identifier ce qui varie et l’encapsuler`,body:`N’appliquez pas les 23 patrons partout (pas de sur-ingénierie !) : introduisez un patron là où un axe de changement réel apparaît.`}],quiz:[{q:`Cas 1 : Vous voulez calculer les frais de port selon 5 transporteurs interchangeables à l’exécution sans if/else.`,options:[`Singleton`,`Strategy`,`Observer`,`ISP`],answer:1,explain:`Exact ! Strategy encapsule chaque algorithme de calcul dans une classe dédiée interchangeable au runtime.`},{q:`Cas 2 : Vous souhaitez ajouter optionnellement du logging, de la compression et du chiffrement autour d’un flux de données.`,options:[`Factory`,`Singleton`,`Decorator`,`LSP`],answer:2,explain:`Exact ! Decorator enveloppe dynamiquement l’objet de base (« poupées russes ») sans explosion de sous-classes.`},{q:`Cas 3 : Lorsqu’un produit en rupture revient en stock, 150 clients inscrits doivent recevoir une alerte automatiquement.`,options:[`Observer`,`Singleton`,`Decorator`,`SRP`],answer:0,explain:`Exact ! Observer (Publish/Subscribe) notifie tous les abonnés enregistrés dès que l’état du Sujet change.`}],speakerNotes:`Conclusion orale : faites participer la salle avec les 3 mini-questions, rappelez qu’il faut éviter le « Patternitis » (mettre des patterns là où le besoin est simple), et ouvrez la séance de questions. Merci de votre attention !`}];function n(e){return`
+    <defs>
+      <linearGradient id="${e}-boxGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#0d1e3d"/>
+        <stop offset="100%" stop-color="#061022"/>
+      </linearGradient>
+      <linearGradient id="${e}-ifaceGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#0c284e"/>
+        <stop offset="100%" stop-color="#07152c"/>
+      </linearGradient>
+      <marker id="${e}-hollowTri" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="10" markerHeight="10" orient="auto">
+        <path d="M 1 1 L 11 6 L 1 11 Z" fill="#040a17" stroke="#38bdf8" stroke-width="1.6"/>
+      </marker>
+      <marker id="${e}-openArrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto">
+        <path d="M 1 2 L 10 6 L 1 10" fill="none" stroke="#7dd3fc" stroke-width="1.6"/>
+      </marker>
+    </defs>
+  `}var r={heroArchitecture:e=>`
+    <svg viewBox="0 0 540 310" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Architecture SOLID et GoF">
+      ${n(e)}
+      <circle cx="270" cy="155" r="132" fill="none" stroke="rgba(56,189,248,0.14)" stroke-dasharray="4 6"/>
+      <circle cx="270" cy="155" r="92" fill="rgba(14,165,233,0.06)" stroke="rgba(56,189,248,0.28)"/>
+
+      <rect x="195" y="122" width="150" height="66" rx="12" fill="url(#${e}-ifaceGrad)" stroke="#38bdf8" stroke-width="1.8"/>
+      <text x="270" y="149" text-anchor="middle" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">CLEAN OOP JAVA</text>
+      <text x="270" y="170" text-anchor="middle" fill="#f8fafc" font-family="Inter, sans-serif" font-size="14" font-weight="800">SOLID × GoF</text>
+
+      <rect x="150" y="18" width="240" height="52" rx="10" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.45)"/>
+      <text x="270" y="38" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">5 PRINCIPES DIRECTEURS</text>
+      <text x="270" y="57" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="13" font-weight="700">S · O · L · I · D</text>
+      <line x1="270" y1="70" x2="270" y2="120" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#${e}-openArrow)"/>
+
+      <rect x="16" y="124" width="142" height="62" rx="10" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.38)"/>
+      <text x="87" y="145" text-anchor="middle" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="10">CRÉATION</text>
+      <text x="87" y="163" text-anchor="middle" fill="#e2e8f0" font-family="JetBrains Mono, monospace" font-size="11.5" font-weight="600">Singleton</text>
+      <text x="87" y="178" text-anchor="middle" fill="#e2e8f0" font-family="JetBrains Mono, monospace" font-size="11.5" font-weight="600">Factory</text>
+      <line x1="158" y1="155" x2="193" y2="155" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="4 3"/>
+
+      <rect x="382" y="124" width="142" height="62" rx="10" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.38)"/>
+      <text x="453" y="145" text-anchor="middle" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="10">STRUCTURE</text>
+      <text x="453" y="167" text-anchor="middle" fill="#e2e8f0" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">Decorator</text>
+      <line x1="382" y1="155" x2="347" y2="155" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="4 3"/>
+
+      <rect x="150" y="236" width="240" height="56" rx="10" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.45)"/>
+      <text x="270" y="256" text-anchor="middle" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="10">COMPORTEMENT</text>
+      <text x="270" y="276" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="12.5" font-weight="600">Strategy · Observer</text>
+      <line x1="270" y1="236" x2="270" y2="190" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#${e}-openArrow)"/>
+    </svg>
+  `,srp:e=>`
+    <svg viewBox="0 0 560 205" xmlns="http://www.w3.org/2000/svg">
+      ${n(e)}
+      <rect x="16" y="42" width="165" height="120" rx="8" fill="#1a0c14" stroke="rgba(248,113,113,0.55)"/>
+      <text x="98" y="64" text-anchor="middle" fill="#f87171" font-family="JetBrains Mono, monospace" font-size="11.5" font-weight="700">❌ ReportManager</text>
+      <line x1="16" y1="74" x2="181" y2="74" stroke="rgba(248,113,113,0.3)"/>
+      <text x="28" y="96" fill="#fecaca" font-family="JetBrains Mono, monospace" font-size="10.5">+ calculateStats()</text>
+      <text x="28" y="116" fill="#fecaca" font-family="JetBrains Mono, monospace" font-size="10.5">+ formatPdf()</text>
+      <text x="28" y="136" fill="#fecaca" font-family="JetBrains Mono, monospace" font-size="10.5">+ saveToDatabase()</text>
+
+      <line x1="194" y1="102" x2="256" y2="102" stroke="#38bdf8" stroke-width="1.8" marker-end="url(#${e}-openArrow)"/>
+      <text x="225" y="92" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10">SRP</text>
+
+      <rect x="270" y="14" width="272" height="50" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(52,211,153,0.5)"/>
+      <text x="286" y="35" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">✅ Report</text>
+      <text x="286" y="53" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10.5">1 raison : logique métier</text>
+
+      <rect x="270" y="77" width="272" height="50" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(52,211,153,0.5)"/>
+      <text x="286" y="98" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">✅ ReportPdfFormatter</text>
+      <text x="286" y="116" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10.5">1 raison : mise en page PDF</text>
+
+      <rect x="270" y="140" width="272" height="50" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(52,211,153,0.5)"/>
+      <text x="286" y="161" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">✅ ReportRepository</text>
+      <text x="286" y="179" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10.5">1 raison : persistance SQL</text>
+    </svg>
+  `,ocp:e=>`
+    <svg viewBox="0 0 560 210" xmlns="http://www.w3.org/2000/svg">
+      ${n(e)}
+      <rect x="175" y="14" width="210" height="64" rx="8" fill="url(#${e}-ifaceGrad)" stroke="#38bdf8" stroke-width="1.6"/>
+      <text x="280" y="33" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10">«interface»</text>
+      <text x="280" y="49" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">DiscountPolicy</text>
+      <line x1="175" y1="57" x2="385" y2="57" stroke="rgba(56,189,248,0.28)"/>
+      <text x="280" y="72" text-anchor="middle" fill="#bae6fd" font-family="JetBrains Mono, monospace" font-size="10.5">+ apply(double price)</text>
+
+      <rect x="14" y="136" width="164" height="54" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.4)"/>
+      <text x="96" y="159" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">StudentDiscount</text>
+      <text x="96" y="177" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10">price * 0.85</text>
+
+      <rect x="198" y="136" width="164" height="54" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.4)"/>
+      <text x="280" y="159" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">VipDiscount</text>
+      <text x="280" y="177" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10">price * 0.70</text>
+
+      <rect x="382" y="136" width="164" height="54" rx="8" fill="#07221d" stroke="#34d399" stroke-dasharray="4 3"/>
+      <text x="464" y="159" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">+ BlackFriday</text>
+      <text x="464" y="177" text-anchor="middle" fill="#a7f3d0" font-family="JetBrains Mono, monospace" font-size="10">Extension sans modif !</text>
+
+      <line x1="96" y1="136" x2="235" y2="80" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="280" y1="136" x2="280" y2="80" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="464" y1="136" x2="325" y2="80" stroke="#34d399" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+    </svg>
+  `,lsp:e=>`
+    <svg viewBox="0 0 560 205" xmlns="http://www.w3.org/2000/svg">
+      ${n(e)}
+      <rect x="20" y="20" width="175" height="50" rx="8" fill="#1a0c14" stroke="rgba(248,113,113,0.45)"/>
+      <text x="107" y="42" text-anchor="middle" fill="#fecaca" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">Rectangle</text>
+      <text x="107" y="59" text-anchor="middle" fill="#fca5a5" font-family="JetBrains Mono, monospace" font-size="10">setWidth() / setHeight()</text>
+
+      <rect x="20" y="128" width="175" height="52" rx="8" fill="#1a0c14" stroke="rgba(248,113,113,0.55)"/>
+      <text x="107" y="150" text-anchor="middle" fill="#f87171" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">❌ Square</text>
+      <text x="107" y="168" text-anchor="middle" fill="#fecaca" font-family="JetBrains Mono, monospace" font-size="10">Casse le contrat w*h !</text>
+      <line x1="107" y1="128" x2="107" y2="72" stroke="#f87171" stroke-width="1.5" marker-end="url(#${e}-hollowTri)"/>
+
+      <rect x="315" y="18" width="190" height="56" rx="8" fill="url(#${e}-ifaceGrad)" stroke="#38bdf8" stroke-width="1.6"/>
+      <text x="410" y="37" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10">«interface»</text>
+      <text x="410" y="55" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">✅ Shape { area() }</text>
+
+      <rect x="270" y="128" width="130" height="52" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(52,211,153,0.45)"/>
+      <text x="335" y="152" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">Rectangle</text>
+      <text x="335" y="169" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10">w * h</text>
+
+      <rect x="418" y="128" width="126" height="52" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(52,211,153,0.45)"/>
+      <text x="481" y="152" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">Square</text>
+      <text x="481" y="169" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10">side * side</text>
+
+      <line x1="335" y1="128" x2="390" y2="76" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="481" y1="128" x2="430" y2="76" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+    </svg>
+  `,isp:e=>`
+    <svg viewBox="0 0 560 205" xmlns="http://www.w3.org/2000/svg">
+      ${n(e)}
+      <rect x="30" y="16" width="148" height="52" rx="8" fill="url(#${e}-ifaceGrad)" stroke="#38bdf8"/>
+      <text x="104" y="36" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10">«interface»</text>
+      <text x="104" y="54" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="11.5" font-weight="700">Printable</text>
+
+      <rect x="206" y="16" width="148" height="52" rx="8" fill="url(#${e}-ifaceGrad)" stroke="#38bdf8"/>
+      <text x="280" y="36" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10">«interface»</text>
+      <text x="280" y="54" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="11.5" font-weight="700">Scannable</text>
+
+      <rect x="382" y="16" width="148" height="52" rx="8" fill="url(#${e}-ifaceGrad)" stroke="#38bdf8"/>
+      <text x="456" y="36" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10">«interface»</text>
+      <text x="456" y="54" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="11.5" font-weight="700">Faxable</text>
+
+      <rect x="22" y="134" width="180" height="54" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(52,211,153,0.5)"/>
+      <text x="112" y="157" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">BasicPrinter</text>
+      <text x="112" y="174" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10">Implémente juste print()</text>
+
+      <rect x="330" y="134" width="206" height="54" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.5)"/>
+      <text x="433" y="157" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">OfficeMultifunction</text>
+      <text x="433" y="174" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10">Combine les 3 interfaces</text>
+
+      <line x1="112" y1="134" x2="104" y2="70" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="395" y1="134" x2="135" y2="70" stroke="#38bdf8" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="433" y1="134" x2="285" y2="70" stroke="#38bdf8" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="465" y1="134" x2="456" y2="70" stroke="#38bdf8" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+    </svg>
+  `,dip:e=>`
+    <svg viewBox="0 0 560 205" xmlns="http://www.w3.org/2000/svg">
+      ${n(e)}
+      <rect x="20" y="72" width="160" height="62" rx="8" fill="url(#${e}-boxGrad)" stroke="#38bdf8" stroke-width="1.5"/>
+      <text x="100" y="96" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="11.5" font-weight="700">OrderService</text>
+      <text x="100" y="116" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10">(Haut niveau métier)</text>
+
+      <rect x="215" y="68" width="155" height="70" rx="8" fill="url(#${e}-ifaceGrad)" stroke="#34d399" stroke-width="1.7"/>
+      <text x="292" y="89" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="10">«interface»</text>
+      <text x="292" y="107" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="11.5" font-weight="700">MessageSender</text>
+      <text x="292" y="125" text-anchor="middle" fill="#bae6fd" font-family="JetBrains Mono, monospace" font-size="10">+ send(to, msg)</text>
+
+      <rect x="408" y="24" width="136" height="52" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.42)"/>
+      <text x="476" y="48" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">SmtpEmailSender</text>
+      <text x="476" y="64" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9.8">Détail bas niveau</text>
+
+      <rect x="408" y="130" width="136" height="52" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.42)"/>
+      <text x="476" y="154" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">TwilioSmsSender</text>
+      <text x="476" y="170" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9.8">Détail bas niveau</text>
+
+      <line x1="180" y1="103" x2="213" y2="103" stroke="#38bdf8" stroke-width="1.6" marker-end="url(#${e}-openArrow)"/>
+      <line x1="408" y1="50" x2="372" y2="90" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="408" y1="156" x2="372" y2="116" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+    </svg>
+  `,singleton:e=>`
+    <svg viewBox="0 0 560 205" xmlns="http://www.w3.org/2000/svg">
+      ${n(e)}
+      <rect x="20" y="30" width="130" height="44" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.38)"/>
+      <text x="85" y="56" text-anchor="middle" fill="#e2e8f0" font-family="JetBrains Mono, monospace" font-size="11">AuthService</text>
+
+      <rect x="20" y="130" width="130" height="44" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.38)"/>
+      <text x="85" y="156" text-anchor="middle" fill="#e2e8f0" font-family="JetBrains Mono, monospace" font-size="11">OrderService</text>
+
+      <rect x="225" y="28" width="305" height="150" rx="10" fill="url(#${e}-ifaceGrad)" stroke="#38bdf8" stroke-width="1.8"/>
+      <text x="377" y="52" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="13" font-weight="700">DatabaseConnection</text>
+      <line x1="225" y1="62" x2="530" y2="62" stroke="rgba(56,189,248,0.35)"/>
+      <text x="240" y="84" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10.8" text-decoration="underline">- volatile instance : DatabaseConnection</text>
+      <line x1="225" y1="96" x2="530" y2="96" stroke="rgba(56,189,248,0.35)"/>
+      <text x="240" y="118" fill="#f87171" font-family="JetBrains Mono, monospace" font-size="10.8">- DatabaseConnection()  // privé !</text>
+      <text x="240" y="140" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="10.8" text-decoration="underline">+ getInstance() : DatabaseConnection</text>
+      <text x="240" y="161" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10.8">+ query(sql : String) : void</text>
+
+      <line x1="150" y1="52" x2="223" y2="90" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#${e}-openArrow)"/>
+      <line x1="150" y1="152" x2="223" y2="115" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#${e}-openArrow)"/>
+    </svg>
+  `,factory:e=>`
+    <svg viewBox="0 0 560 215" xmlns="http://www.w3.org/2000/svg">
+      ${n(e)}
+      <rect x="16" y="22" width="196" height="68" rx="8" fill="url(#${e}-boxGrad)" stroke="#38bdf8" stroke-width="1.6"/>
+      <text x="114" y="45" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">NotificationFactory</text>
+      <line x1="16" y1="54" x2="212" y2="54" stroke="rgba(56,189,248,0.3)"/>
+      <text x="114" y="75" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="10.5">+ create(type) : Notification</text>
+
+      <rect x="305" y="18" width="225" height="72" rx="8" fill="url(#${e}-ifaceGrad)" stroke="#38bdf8" stroke-width="1.7"/>
+      <text x="417" y="37" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10">«interface»</text>
+      <text x="417" y="54" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">Notification</text>
+      <line x1="305" y1="62" x2="530" y2="62" stroke="rgba(56,189,248,0.3)"/>
+      <text x="417" y="80" text-anchor="middle" fill="#bae6fd" font-family="JetBrains Mono, monospace" font-size="10.5">+ notifyUser(msg : String)</text>
+
+      <line x1="212" y1="56" x2="303" y2="56" stroke="#7dd3fc" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#${e}-openArrow)"/>
+      <text x="258" y="47" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="9.5">«creates»</text>
+
+      <rect x="195" y="146" width="112" height="50" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.4)"/>
+      <text x="251" y="175" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">EmailNotif</text>
+
+      <rect x="321" y="146" width="106" height="50" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.4)"/>
+      <text x="374" y="175" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">SmsNotif</text>
+
+      <rect x="441" y="146" width="106" height="50" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.4)"/>
+      <text x="494" y="175" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">PushNotif</text>
+
+      <line x1="251" y1="146" x2="375" y2="92" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="374" y1="146" x2="412" y2="92" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="494" y1="146" x2="448" y2="92" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+    </svg>
+  `,strategy:e=>`
+    <svg viewBox="0 0 560 215" xmlns="http://www.w3.org/2000/svg">
+      ${n(e)}
+      <rect x="16" y="20" width="205" height="76" rx="8" fill="url(#${e}-boxGrad)" stroke="#38bdf8" stroke-width="1.6"/>
+      <text x="118" y="42" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">ShoppingCart</text>
+      <line x1="16" y1="50" x2="221" y2="50" stroke="rgba(56,189,248,0.3)"/>
+      <text x="28" y="68" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10">- strategy : PaymentStrategy</text>
+      <text x="28" y="85" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="10">+ setStrategy(s) / checkout()</text>
+
+      <rect x="305" y="20" width="235" height="72" rx="8" fill="url(#${e}-ifaceGrad)" stroke="#38bdf8" stroke-width="1.7"/>
+      <text x="422" y="38" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10">«interface»</text>
+      <text x="422" y="55" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">PaymentStrategy</text>
+      <line x1="305" y1="63" x2="540" y2="63" stroke="rgba(56,189,248,0.3)"/>
+      <text x="422" y="81" text-anchor="middle" fill="#bae6fd" font-family="JetBrains Mono, monospace" font-size="10.5">+ pay(amount : double)</text>
+
+      <polygon points="222,56 230,51 238,56 230,61" fill="#040a17" stroke="#38bdf8" stroke-width="1.5"/>
+      <line x1="238" y1="56" x2="303" y2="56" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#${e}-openArrow)"/>
+
+      <rect x="190" y="148" width="112" height="48" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.4)"/>
+      <text x="246" y="176" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">CardStrategy</text>
+
+      <rect x="316" y="148" width="112" height="48" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.4)"/>
+      <text x="372" y="176" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">PayPalStrategy</text>
+
+      <rect x="442" y="148" width="106" height="48" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.4)"/>
+      <text x="495" y="176" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">CryptoStrategy</text>
+
+      <line x1="246" y1="148" x2="380" y2="94" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="372" y1="148" x2="416" y2="94" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="495" y1="148" x2="452" y2="94" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+    </svg>
+  `,decorator:e=>`
+    <svg viewBox="0 0 560 220" xmlns="http://www.w3.org/2000/svg">
+      ${n(e)}
+      <rect x="180" y="12" width="200" height="58" rx="8" fill="url(#${e}-ifaceGrad)" stroke="#38bdf8" stroke-width="1.7"/>
+      <text x="280" y="30" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10">«interface»</text>
+      <text x="280" y="46" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">DataSource</text>
+      <text x="280" y="62" text-anchor="middle" fill="#bae6fd" font-family="JetBrains Mono, monospace" font-size="10">+ writeData(data)</text>
+
+      <rect x="28" y="102" width="168" height="50" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.42)"/>
+      <text x="112" y="131" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">FileDataSource</text>
+
+      <rect x="295" y="100" width="235" height="54" rx="8" fill="url(#${e}-boxGrad)" stroke="#34d399" stroke-width="1.5"/>
+      <text x="412" y="122" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">DataSourceDecorator</text>
+      <text x="412" y="141" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10"># wrappee : DataSource</text>
+
+      <rect x="245" y="174" width="145" height="38" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.4)"/>
+      <text x="317" y="197" text-anchor="middle" fill="#e2e8f0" font-family="JetBrains Mono, monospace" font-size="10.2" font-weight="600">EncryptionDecorator</text>
+
+      <rect x="404" y="174" width="144" height="38" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.4)"/>
+      <text x="476" y="197" text-anchor="middle" fill="#e2e8f0" font-family="JetBrains Mono, monospace" font-size="10.2" font-weight="600">CompressionDecorator</text>
+
+      <line x1="112" y1="102" x2="235" y2="72" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="400" y1="100" x2="320" y2="72" stroke="#34d399" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <path d="M 530 127 L 548 127 L 548 40 L 382 40" fill="none" stroke="#34d399" stroke-width="1.3" marker-end="url(#${e}-openArrow)"/>
+      <line x1="317" y1="174" x2="385" y2="155" stroke="#38bdf8" stroke-width="1.4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="476" y1="174" x2="438" y2="155" stroke="#38bdf8" stroke-width="1.4" marker-end="url(#${e}-hollowTri)"/>
+    </svg>
+  `,observer:e=>`
+    <svg viewBox="0 0 560 215" xmlns="http://www.w3.org/2000/svg">
+      ${n(e)}
+      <rect x="16" y="20" width="218" height="86" rx="8" fill="url(#${e}-boxGrad)" stroke="#38bdf8" stroke-width="1.6"/>
+      <text x="125" y="42" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">WeatherStation (Subject)</text>
+      <line x1="16" y1="50" x2="234" y2="50" stroke="rgba(56,189,248,0.3)"/>
+      <text x="28" y="68" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10">- observers : List&lt;Observer&gt;</text>
+      <text x="28" y="84" fill="#34d399" font-family="JetBrains Mono, monospace" font-size="10">+ subscribe(o) / unsubscribe(o)</text>
+      <text x="28" y="99" fill="#bae6fd" font-family="JetBrains Mono, monospace" font-size="10">+ notifyObservers()</text>
+
+      <rect x="315" y="24" width="225" height="72" rx="8" fill="url(#${e}-ifaceGrad)" stroke="#38bdf8" stroke-width="1.7"/>
+      <text x="427" y="43" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="10">«interface»</text>
+      <text x="427" y="60" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">Observer</text>
+      <line x1="315" y1="68" x2="540" y2="68" stroke="rgba(56,189,248,0.3)"/>
+      <text x="427" y="85" text-anchor="middle" fill="#bae6fd" font-family="JetBrains Mono, monospace" font-size="10.5">+ update(temp : double)</text>
+
+      <line x1="234" y1="60" x2="313" y2="60" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#${e}-openArrow)"/>
+      <text x="274" y="51" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="9.5">1 .. *</text>
+
+      <rect x="195" y="148" width="112" height="48" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.4)"/>
+      <text x="251" y="176" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">PhoneDisplay</text>
+
+      <rect x="319" y="148" width="114" height="48" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.4)"/>
+      <text x="376" y="176" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">WebDashboard</text>
+
+      <rect x="445" y="148" width="102" height="48" rx="8" fill="url(#${e}-boxGrad)" stroke="rgba(56,189,248,0.4)"/>
+      <text x="496" y="176" text-anchor="middle" fill="#f8fafc" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">AlertSystem</text>
+
+      <line x1="251" y1="148" x2="385" y2="98" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="376" y1="148" x2="420" y2="98" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+      <line x1="496" y1="148" x2="458" y2="98" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#${e}-hollowTri)"/>
+    </svg>
+  `};function i(e,t=`screen`){let n=r[e];return n?n(`${t}-${e}`):``}var a=new Set(`public.private.protected.class.interface.abstract.extends.implements.static.final.volatile.synchronized.void.return.new.this.super.if.else.for.while.switch.case.default.break.throw.throws.try.catch.boolean.int.double.long.float.true.false.null.enum.record.package.import`.split(`.`)),o=new Set([`String`,`List`,`ArrayList`,`Map`,`HashMap`,`Set`,`Optional`,`System`,`Runtime`,`Thread`,`IllegalArgumentException`,`UnsupportedOperationException`,`Objects`,`Collections`,`Comparator`,`InputStream`,`BufferedInputStream`,`DataInputStream`,`FileInputStream`]);function s(e){return String(e).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`)}function c(e){let t=/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*")|(@[A-Za-z_]\w*)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]\w*\b)/g;return`<table class="code-table" role="presentation"><tbody>${e.trim().split(`
+`).map((e,n)=>{let r=``,i=0;t.lastIndex=0;let c;for(;(c=t.exec(e))!==null;){c.index>i&&(r+=s(e.slice(i,c.index)));let[n,l,u,d,f,p]=c;l===void 0?u===void 0?d===void 0?f===void 0?p!==void 0&&(a.has(p)?r+=`<span class="tok-kw">${s(p)}</span>`:o.has(p)||/^[A-Z][A-Za-z0-9_]*$/.test(p)?r+=`<span class="tok-type">${s(p)}</span>`:e[c.index+p.length]===`(`?r+=`<span class="tok-fn">${s(p)}</span>`:r+=s(p)):r+=`<span class="tok-num">${s(n)}</span>`:r+=`<span class="tok-ann">${s(n)}</span>`:r+=`<span class="tok-str">${s(n)}</span>`:r+=`<span class="tok-com">${s(n)}</span>`,i=t.lastIndex}return i<e.length&&(r+=s(e.slice(i))),`<tr><td class="code-ln">${n+1}</td><td class="code-line">${r||` `}</td></tr>`}).join(``)}</tbody></table>`}function l(){return new Date().toTimeString().split(` `)[0]}function u(e,t){switch(e){case`singleton`:return`
+        <div class="sim-pane">
+          <div class="sim-expr">DatabaseConnection ref = DatabaseConnection.getInstance();</div>
+          <div class="sim-controls">
+            <button class="sim-btn" data-sim-action="singleton-call" data-thread="main">
+              ▶ Appel depuis Thread-main
+            </button>
+            <button class="sim-btn" data-sim-action="singleton-call" data-thread="worker-1">
+              ▶ Appel depuis Worker-1
+            </button>
+            <button class="sim-btn secondary" data-sim-action="singleton-reset">
+              ↺ Réinitialiser JVM
+            </button>
+          </div>
+          <div class="sim-console">${t.singletonLogs.map(e=>`<div class="log-line"><span class="ts">[${e.ts}]</span>${e.html}</div>`).join(``)}</div>
+        </div>
+      `;case`factory`:{let e=t.factoryLogs.map(e=>`<div class="log-line"><span class="ts">[${e.ts}]</span>${e.html}</div>`).join(``);return`
+        <div class="sim-pane">
+          <div class="sim-expr">Notification n = NotificationFactory.create("${s(t.factoryChannel)}"); n.notifyUser("Cours GoF");</div>
+          <div class="sim-controls">
+            <button class="sim-btn ${t.factoryChannel===`EMAIL`?`active-toggle`:``}" data-sim-action="factory-create" data-channel="EMAIL">
+              ▶ create("EMAIL")
+            </button>
+            <button class="sim-btn ${t.factoryChannel===`SMS`?`active-toggle`:``}" data-sim-action="factory-create" data-channel="SMS">
+              ▶ create("SMS")
+            </button>
+            <button class="sim-btn ${t.factoryChannel===`PUSH`?`active-toggle`:``}" data-sim-action="factory-create" data-channel="PUSH">
+              ▶ create("PUSH")
+            </button>
+          </div>
+          <div class="sim-console">${e}</div>
+        </div>
+      `}case`strategy`:{let e=t.strategyLogs.map(e=>`<div class="log-line"><span class="ts">[${e.ts}]</span>${e.html}</div>`).join(``);return`
+        <div class="sim-pane">
+          <div class="sim-expr">cart.setStrategy(new ${s(t.strategyName)}()); cart.checkout(150.0);</div>
+          <div class="sim-controls">
+            <button class="sim-btn ${t.strategyName===`CardStrategy`?`active-toggle`:``}" data-sim-action="strategy-run" data-strat="CardStrategy">
+              ▶ CardStrategy
+            </button>
+            <button class="sim-btn ${t.strategyName===`PayPalStrategy`?`active-toggle`:``}" data-sim-action="strategy-run" data-strat="PayPalStrategy">
+              ▶ PayPalStrategy
+            </button>
+            <button class="sim-btn ${t.strategyName===`CryptoStrategy`?`active-toggle`:``}" data-sim-action="strategy-run" data-strat="CryptoStrategy">
+              ▶ CryptoStrategy
+            </button>
+          </div>
+          <div class="sim-console">${e}</div>
+        </div>
+      `}case`decorator`:{let{compress:e,encrypt:n,base64:r}=t.decoratorLayers,i=`new FileDataSource("rapport.txt")`,a=`Architecture_SOLID_GoF`;return e&&(i=`new CompressionDecorator(${i})`,a=`ZIP(${a})`),n&&(i=`new EncryptionDecorator(${i})`,a=`AES256[${a}]`),r&&(i=`new Base64Decorator(${i})`,a=`B64{${a}}`),`
+        <div class="sim-pane">
+          <div class="sim-expr">DataSource src = ${s(i)};</div>
+          <div class="sim-controls">
+            <button class="sim-btn ${e?`active-toggle`:`secondary`}" data-sim-action="decorator-toggle" data-layer="compress">
+              ${e?`✓`:`+`} CompressionDecorator
+            </button>
+            <button class="sim-btn ${n?`active-toggle`:`secondary`}" data-sim-action="decorator-toggle" data-layer="encrypt">
+              ${n?`✓`:`+`} EncryptionDecorator
+            </button>
+            <button class="sim-btn ${r?`active-toggle`:`secondary`}" data-sim-action="decorator-toggle" data-layer="base64">
+              ${r?`✓`:`+`} Base64Decorator
+            </button>
+          </div>
+          <div class="sim-console">
+            <div class="log-line"><span class="hl-cyan">Entrée brute :</span> "Architecture_SOLID_GoF"</div>
+            <div class="log-line"><span class="hl-warn">Couches actives :</span> ${[e&&`Compression`,n&&`Chiffrement AES`,r&&`Encodage Base64`].filter(Boolean).join(` → `)||`Aucune (Composant nu FileDataSource)`}</div>
+            <div class="log-line"><span class="hl-green">Sortie disque :</span> rapport.txt &lt;= "${s(a)}"</div>
+          </div>
+        </div>
+      `}case`observer`:{let e=t.observerSubs,n=t.observerLogs.map(e=>`<div class="log-line"><span class="ts">[${e.ts}]</span>${e.html}</div>`).join(``);return`
+        <div class="sim-pane">
+          <div class="sim-controls">
+            <button class="sim-btn ${e.phone?`active-toggle`:`secondary`}" data-sim-action="obs-toggle" data-obs="phone">
+              ${e.phone?`🔔`:`🔕`} PhoneDisplay
+            </button>
+            <button class="sim-btn ${e.web?`active-toggle`:`secondary`}" data-sim-action="obs-toggle" data-obs="web">
+              ${e.web?`🔔`:`🔕`} WebDashboard
+            </button>
+            <button class="sim-btn ${e.alert?`active-toggle`:`secondary`}" data-sim-action="obs-toggle" data-obs="alert">
+              ${e.alert?`🔔`:`🔕`} AlertCanicule
+            </button>
+          </div>
+          <div class="sim-controls">
+            <button class="sim-btn" data-sim-action="obs-emit" data-temp="21.5">
+              ▶ setTemperature(21.5 °C)
+            </button>
+            <button class="sim-btn" data-sim-action="obs-emit" data-temp="38.0">
+              ▶ setTemperature(38.0 °C 🔥)
+            </button>
+          </div>
+          <div class="sim-console">${n}</div>
+        </div>
+      `}default:return``}}function d(){return{singletonCreated:!1,singletonCount:0,singletonLogs:[{ts:l(),html:`JVM prête — aucune instance de <span class="hl-cyan">DatabaseConnection</span> créée (Lazy Loading).`}],factoryChannel:`EMAIL`,factoryLogs:[{ts:l(),html:`Cliquez sur un canal pour appeler <span class="hl-cyan">NotificationFactory.create(...)</span>.`}],strategyName:`CardStrategy`,strategyLogs:[{ts:l(),html:`Panier initialisé (150.00 €) — changez de <span class="hl-cyan">PaymentStrategy</span> à chaud !`}],decoratorLayers:{compress:!0,encrypt:!0,base64:!1},observerSubs:{phone:!0,web:!0,alert:!0},observerLogs:[{ts:l(),html:`3 observateurs abonnés à <span class="hl-cyan">WeatherStation</span>. Émettez une mesure !`}]}}function f(e,t,n){let r=l();if(e===`singleton-call`)n.singletonCount+=1,n.singletonCreated?n.singletonLogs.unshift({ts:r,html:`[${s(t.thread)}] Appel #${n.singletonCount} → instance existante retournée : <span class="hl-green">@7a81197d</span> (même objet !)`}):(n.singletonCreated=!0,n.singletonLogs.unshift({ts:r,html:`[${s(t.thread)}] 1er appel → <span class="hl-warn">new DatabaseConnection()</span> exécuté → réf <span class="hl-green">@7a81197d</span>`}));else if(e===`singleton-reset`)n.singletonCreated=!1,n.singletonCount=0,n.singletonLogs=[{ts:r,html:`Mémoire JVM réinitialisée (<span class="hl-cyan">instance = null</span>).`}];else if(e===`factory-create`){let e=t.channel;n.factoryChannel=e,n.factoryLogs.unshift({ts:r,html:`Fabrique instancie <span class="hl-green">${{EMAIL:`EmailNotification → [EMAIL] Envoi SMTP : Cours GoF`,SMS:`SmsNotification → [SMS] Envoi opérateur : Cours GoF`,PUSH:`PushNotification → [PUSH] Notification mobile : Cours GoF`}[e]}</span>`})}else if(e===`strategy-run`){let e=t.strat;n.strategyName=e,n.strategyLogs.unshift({ts:r,html:`<span class="hl-cyan">${e}</span> → <span class="hl-green">${{CardStrategy:`150.0 € payés par Carte Bancaire (**** 4242) — frais 1.5 %`,PayPalStrategy:`150.0 € réglés instantanément via compte PayPal vérifié`,CryptoStrategy:`150.0 € validés sur contrat intelligent Blockchain`}[e]}</span>`})}else if(e===`decorator-toggle`){let e=t.layer;n.decoratorLayers[e]=!n.decoratorLayers[e]}else if(e===`obs-toggle`){let e=t.obs;n.observerSubs[e]=!n.observerSubs[e],n.observerLogs.unshift({ts:r,html:`<span class="hl-cyan">${e}</span> est maintenant <span class="${n.observerSubs[e]?`hl-green`:`hl-warn`}">${n.observerSubs[e]?`ABONNÉ`:`DÉSABONNÉ`}</span>.`})}else if(e===`obs-emit`){let e=parseFloat(t.temp),i=[];n.observerSubs.phone&&i.push(`[Mobile: ${e}°C]`),n.observerSubs.web&&i.push(`[WebUI: ${e}°C]`),n.observerSubs.alert&&i.push(e>=35?`[ALERTE CANICULE ${e}°C !]`:`[AlertSystem: RAS]`),n.observerLogs.unshift({ts:r,html:i.length>0?`setTemperature(${e}°C) → <span class="hl-green">${i.join(` · `)}</span>`:`setTemperature(${e}°C) → <span class="hl-warn">Aucun observateur abonné.</span>`})}}var p={currentSlide:0,activeTabs:{},showNotes:!1,showOverview:!1,copiedSlide:null,quizAnswers:{},quizIdx:0,sim:d()};function m(t){let n=e[0].id;for(let r of e)t>=r.startSlide&&(n=r.id);return n}function h(e){return!e.tabs||e.tabs.length===0?null:p.activeTabs[e.id]||e.tabs[0].id}function g(e){return`
+    <header class="slide-header">
+      <div>
+        <div class="slide-eyebrow">
+          <span>${s(e.eyebrow)}</span>
+          ${e.badge?`<span class="eyebrow-badge">${s(e.badge)}</span>`:``}
+        </div>
+        <h1 class="slide-title">
+          ${s(e.titlePlain)}<span class="text-aura">${s(e.titleAura)}</span>
+        </h1>
+        <p class="slide-subtitle">${s(e.subtitle)}</p>
+      </div>
+    </header>
+  `}function _(e,t=!1){let n=t?e.tabs[0].id:h(e),r=n===`__sim__`&&e.simulator,i=e.tabs.find(e=>e.id===n)||e.tabs[0];return`
+    <div class="ide-window">
+      <div class="ide-header">
+        <div class="ide-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="ide-tabs">${e.tabs.map(t=>`<button class="${[`ide-tab`,t.kind===`bad`?`tab-bad`:t.kind===`good`?`tab-good`:``,!r&&t.id===i.id?`active`:``].filter(Boolean).join(` `)}" data-tab-slide="${e.id}" data-tab-id="${t.id}">${s(t.label)}</button>`).join(``)}${e.simulator?`<button class="ide-tab tab-sim ${r?`active`:``}" data-tab-slide="${e.id}" data-tab-id="__sim__">▶ Démo Live</button>`:``}</div>
+        ${r?``:`<button class="copy-code-btn" data-copy-slide="${e.id}">
+                ${p.copiedSlide===e.id?`✓ Copié`:`Copier Java`}
+              </button>`}
+      </div>
+      ${r?u(e.simulator,p.sim):`<div class="ide-body">${c(i.code)}</div>`}
+    </div>
+  `}function v(e,t=!1){if(e.layout===`cover`)return`
+      <section class="cover-hero">
+        <div>
+          <div class="cover-kicker">
+            <span class="brand-dot"></span>
+            <span>${s(e.kicker)}</span>
+          </div>
+          <h1 class="cover-title">
+            ${s(e.titlePlain)}<br />
+            <span class="text-aura">${s(e.titleAura)}</span>
+          </h1>
+          <p class="cover-lead">${s(e.subtitle)}</p>
+          <div class="cover-pills">
+            ${e.chips.map(e=>`<span class="topic-chip">${s(e)}</span>`).join(``)}
+          </div>
+          ${t?``:`<button class="cta-start-btn" data-nav="next">
+                  <span>Démarrer la présentation</span>
+                  <span>→</span>
+                </button>`}
+        </div>
+        <div class="aura-card" style="padding: 20px;">
+          <div class="card-label">CARTOGRAPHIE DU COURS · ARCHITECTURE OBJET</div>
+          <div class="uml-box" style="min-height: 270px; background: transparent; border: none; padding: 0;">
+            ${i(e.diagram,t?`print`:`screen`)}
+          </div>
+        </div>
+      </section>
+    `;if(e.layout===`pillars`)return`
+      ${g(e)}
+      <div class="cards-grid-5">
+        ${e.pillars.map(e=>`
+          <div class="aura-card aura-card-interactive" data-goto="${e.targetSlide}">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:32px;font-weight:800;font-family:var(--font-mono);color:var(--aura-cyan);line-height:1;">
+                ${s(e.letter)}
+              </span>
+              <span class="brand-tag">Java + UML →</span>
+            </div>
+            <div class="card-title">${s(e.name)}</div>
+            <div class="card-label" style="color:#bae6fd;">${s(e.fr)}</div>
+            <p class="card-text">${s(e.summary)}</p>
+          </div>
+        `).join(``)}
+      </div>
+      <div class="mini-box info" style="margin-top:16px;text-align:center;font-size:13.5px;">
+        <strong>Synthèse Architecturale</strong>
+        ${s(e.bottomBanner)}
+      </div>
+    `;if(e.layout===`taxonomy`)return`
+      ${g(e)}
+      <div class="cards-grid-3">
+        ${e.families.map(e=>`
+          <div class="aura-card">
+            <div class="card-label">${s(e.tag)}</div>
+            <div class="card-title">${s(e.title)}</div>
+            <p class="card-text">${s(e.desc)}</p>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+              ${e.patterns.map(e=>`
+                <div class="mini-box info aura-card-interactive" data-goto="${e.slide}">
+                  <strong style="color:var(--aura-cyan);">★ ${s(e.name)} →</strong>
+                  ${s(e.focus)}
+                </div>
+              `).join(``)}
+            </div>
+            <div style="margin-top:auto;padding-top:8px;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">
+              ${s(e.others)}
+            </div>
+          </div>
+        `).join(``)}
+      </div>
+    `;if(e.layout===`matrix`)return`
+      ${g(e)}
+      <div class="aura-card" style="padding: 0; overflow: hidden;">
+        <table class="aura-table">
+          <thead>
+            <tr>
+              <th>Patron GoF</th>
+              <th>Famille</th>
+              <th>Alignement SOLID</th>
+              <th>Justification Architecturale</th>
+              <th>Exemple Réel Java JDK</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${e.rows.map(e=>`
+              <tr>
+                <td style="font-family:var(--font-mono);font-weight:700;color:#f8fafc;">${s(e.pattern)}</td>
+                <td style="font-family:var(--font-mono);color:#93c5fd;">${s(e.family)}</td>
+                <td>
+                  <span class="${e.solidStatus===`yes`?`pill-yes`:`pill-warn`}">
+                    ${s(e.solidLabel)}
+                  </span>
+                </td>
+                <td>${s(e.solidExplain)}</td>
+                <td style="font-family:var(--font-mono);font-size:11.8px;color:#bae6fd;">${s(e.jdkExample)}</td>
+              </tr>
+            `).join(``)}
+          </tbody>
+        </table>
+      </div>
+    `;if(e.layout===`conclusion`){let t=p.quizIdx,n=e.quiz[t],r=p.quizAnswers[t];return`
+      ${g(e)}
+      <div class="split-grid">
+        <div class="aura-card">
+          <div class="card-label">LES 3 MAXIMES DU GANG OF FOUR</div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            ${e.maxims.map(e=>`
+              <div class="mini-box info">
+                <strong style="color:var(--aura-cyan);">${e.num} · ${s(e.title)}</strong>
+                ${s(e.body)}
+              </div>
+            `).join(``)}
+          </div>
+        </div>
+
+        <div class="aura-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span class="card-label">QUIZ INTERACTIF DE SOUTENANCE (${t+1} / ${e.quiz.length})</span>
+            <div style="display:flex;gap:6px;">
+              ${e.quiz.map((e,n)=>`
+                <button class="ide-tab ${n===t?`active`:``}" data-quiz-step="${n}">
+                  Cas ${n+1}
+                </button>
+              `).join(``)}
+            </div>
+          </div>
+
+          <div class="card-title" style="font-size:15px;line-height:1.45;">
+            ${s(n.q)}
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            ${n.options.map((e,t)=>{let i=`quiz-option`;return r!==void 0&&(t===n.answer?i+=` correct`:t===r&&(i+=` wrong`)),`<button class="${i}" data-quiz-pick="${t}">${s(e)}</button>`}).join(``)}
+          </div>
+
+          ${r===void 0?`<div class="mini-box info">
+                  <strong>Interaction avec l’auditoire</strong>
+                  Cliquez sur une réponse pour vérifier et afficher la justification POO.
+                </div>`:`<div class="mini-box ${r===n.answer?`good`:`bad`}">
+                  <strong>${r===n.answer?`✓ Bonne réponse !`:`✗ Réponse attendue : `+n.options[n.answer]}</strong>
+                  ${s(n.explain)}
+                </div>`}
+        </div>
+      </div>
+    `}let n=e.leftCard;return`
+    ${g(e)}
+    <div class="split-grid">
+      <div class="aura-card">
+        ${e.diagram?`<div class="uml-box">${i(e.diagram,t?`print`:`screen`)}</div>`:``}
+        <div class="card-label">${s(n.label)}</div>
+        <div class="card-title">${s(n.title)}</div>
+        <ul class="bullet-list">
+          ${n.bullets.map(e=>`<li><span class="bullet-dot"></span><span>${s(e)}</span></li>`).join(``)}
+        </ul>
+        ${n.callouts?`<div class="callout-row">
+                ${n.callouts.map(e=>`
+                  <div class="mini-box ${e.type}">
+                    <strong>${s(e.title)}</strong>
+                    ${s(e.body)}
+                  </div>
+                `).join(``)}
+              </div>`:``}
+      </div>
+
+      ${_(e,t)}
+    </div>
+  `}function y(){let n=document.getElementById(`app`),r=t[p.currentSlide],i=m(p.currentSlide),a=(p.currentSlide+1)/t.length*100;n.innerHTML=`
+    \x3C!-- TOP BAR -->
+    <nav class="deck-topbar" aria-label="Navigation des chapitres">
+      <div class="brand-pill">
+        <span class="brand-dot"></span>
+        <span>GoF &amp; SOLID</span>
+        <span class="brand-tag">JAVA 21</span>
+      </div>
+
+      <div class="chapter-nav">
+        ${e.map(e=>`
+          <button class="chapter-btn ${e.id===i?`active`:``}" data-goto="${e.startSlide}">
+            ${s(e.label)}
+          </button>
+        `).join(``)}
+      </div>
+
+      <div class="toolbar-actions">
+        <button class="icon-btn ${p.showNotes?`active`:``}" data-action="toggle-notes" title="Notes d'orateur (Touche N)">
+          <span>Notes</span>
+          <span class="kbd-hint">N</span>
+        </button>
+        <button class="icon-btn ${p.showOverview?`active`:``}" data-action="toggle-overview" title="Grille des slides (Touche G)">
+          <span>Grille</span>
+          <span class="kbd-hint">G</span>
+        </button>
+        <button class="icon-btn" data-action="print-pdf" title="Exporter / Imprimer en PDF (Touche P)">
+          <span>PDF</span>
+          <span class="kbd-hint">P</span>
+        </button>
+        <button class="icon-btn" data-action="fullscreen" title="Plein écran (Touche F)">
+          <span>Plein écran</span>
+          <span class="kbd-hint">F</span>
+        </button>
+      </div>
+    </nav>
+
+    \x3C!-- MAIN SLIDE VIEWPORT -->
+    <main class="slide-stage">
+      <div class="slide-container" key="${r.id}">
+        ${v(r,!1)}
+      </div>
+    </main>
+
+    \x3C!-- BOTTOM PROGRESS & CONTROLS -->
+    <footer class="deck-bottombar">
+      <div class="progress-track">
+        <div class="progress-fill" style="width: ${a.toFixed(2)}%;"></div>
+      </div>
+
+      <div class="slide-counter">
+        Slide <strong>${String(p.currentSlide+1).padStart(2,`0`)}</strong> / ${String(t.length).padStart(2,`0`)}
+      </div>
+
+      <div class="dots-strip" role="tablist" aria-label="Accès rapide aux slides">
+        ${t.map((e,t)=>`
+          <button
+            class="slide-dot ${t===p.currentSlide?`active`:``}"
+            data-goto="${t}"
+            title="${t+1}. ${s(e.titlePlain+e.titleAura)}"
+          ></button>
+        `).join(``)}
+      </div>
+
+      <div class="nav-controls">
+        <button class="icon-btn" data-nav="prev" ${p.currentSlide===0?`disabled style="opacity:0.4;cursor:not-allowed;"`:``}>
+          <span>← Précédent</span>
+        </button>
+        <button class="icon-btn" data-nav="next" ${p.currentSlide===t.length-1?`disabled style="opacity:0.4;cursor:not-allowed;"`:``}>
+          <span>Suivant →</span>
+        </button>
+      </div>
+    </footer>
+
+    ${p.showNotes?`
+      <aside class="notes-drawer" role="region" aria-label="Notes d'orateur">
+        <div class="notes-drawer-header">
+          <span>🎙️ GUIDE D’ORATEUR — SLIDE ${p.currentSlide+1}/${t.length}</span>
+          <button class="copy-code-btn" data-action="toggle-notes">Fermer (N)</button>
+        </div>
+        <p>${s(r.speakerNotes)}</p>
+      </aside>
+    `:``}
+
+    ${p.showOverview?`
+      <div class="overview-modal" role="dialog" aria-label="Vue d'ensemble des slides">
+        <div style="max-width:1320px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div class="slide-eyebrow">NAVIGATION RAPIDE</div>
+            <h2 class="slide-title" style="font-size:24px;">Vue d’ensemble des ${t.length} slides</h2>
+          </div>
+          <button class="icon-btn" data-action="toggle-overview">Fermer (Échap)</button>
+        </div>
+        <div class="overview-grid">
+          ${t.map((e,t)=>`
+            <button class="overview-card ${t===p.currentSlide?`current`:``}" data-goto="${t}">
+              <div class="card-label">SLIDE ${String(t+1).padStart(2,`0`)}</div>
+              <div class="card-title" style="margin:6px 0;font-size:15px;">
+                ${s(e.titlePlain+e.titleAura)}
+              </div>
+              <p class="card-text" style="font-size:12px;">${s(e.subtitle.slice(0,92))}…</p>
+            </button>
+          `).join(``)}
+        </div>
+      </div>
+    `:``}
+  `}function b(e){p.currentSlide=Math.max(0,Math.min(t.length-1,e)),p.showOverview=!1,y()}function x(){document.fullscreenElement?document.exitFullscreen?.().catch(()=>{}):document.documentElement.requestFullscreen?.().catch(()=>{})}function S(){let e=document.querySelector(`.print-deck`);e||(e=document.createElement(`div`),e.className=`print-deck`,document.body.appendChild(e)),e.innerHTML=t.map(e=>`<section class="print-slide">${v(e,!0)}</section>`).join(``),window.print()}document.addEventListener(`click`,e=>{let n=e.target.closest(`[data-nav]`);if(n){let e=n.dataset.nav;b(e===`next`?p.currentSlide+1:p.currentSlide-1);return}let r=e.target.closest(`[data-goto]`);if(r){b(parseInt(r.dataset.goto,10));return}let i=e.target.closest(`[data-tab-id]`);if(i){p.activeTabs[i.dataset.tabSlide]=i.dataset.tabId,y();return}let a=e.target.closest(`[data-copy-slide]`);if(a){let e=t.find(e=>e.id===a.dataset.copySlide);if(e){let t=h(e),n=e.tabs.find(e=>e.id===t)||e.tabs[0];navigator.clipboard?.writeText(n.code).then(()=>{p.copiedSlide=e.id,y(),setTimeout(()=>{p.copiedSlide=null,y()},1500)})}return}let o=e.target.closest(`[data-sim-action]`);if(o){f(o.dataset.simAction,o.dataset,p.sim),y();return}let s=e.target.closest(`[data-quiz-step]`);if(s){p.quizIdx=parseInt(s.dataset.quizStep,10),y();return}let c=e.target.closest(`[data-quiz-pick]`);if(c){p.quizAnswers[p.quizIdx]=parseInt(c.dataset.quizPick,10),y();return}let l=e.target.closest(`[data-action]`);if(l){let e=l.dataset.action;e===`toggle-notes`?(p.showNotes=!p.showNotes,y()):e===`toggle-overview`?(p.showOverview=!p.showOverview,y()):e===`fullscreen`?x():e===`print-pdf`&&S()}}),document.addEventListener(`keydown`,e=>{e.target.tagName!==`INPUT`&&e.target.tagName!==`TEXTAREA`&&(e.key===`ArrowRight`||e.key===`PageDown`||e.key===` `?(e.preventDefault(),b(p.currentSlide+1)):e.key===`ArrowLeft`||e.key===`PageUp`?(e.preventDefault(),b(p.currentSlide-1)):e.key===`Home`?(e.preventDefault(),b(0)):e.key===`End`?(e.preventDefault(),b(t.length-1)):e.key===`n`||e.key===`N`?(p.showNotes=!p.showNotes,y()):e.key===`g`||e.key===`G`?(p.showOverview=!p.showOverview,y()):e.key===`f`||e.key===`F`?x():e.key===`p`||e.key===`P`?S():e.key===`Escape`&&(p.showOverview||p.showNotes)&&(p.showOverview=!1,p.showNotes=!1,y()))}),y();</script>
+    <style rel="stylesheet" crossorigin>:root{--bg-void:#030712;--bg-surface-1:#081021d1;--bg-surface-2:#0c1830e6;--bg-surface-hover:#122446eb;--bg-code:#040a17;--bg-code-header:#081226;--border-subtle:#38bdf824;--border-medium:#38bdf847;--border-bright:#38bdf88c;--aura-cyan:#38bdf8;--aura-sky:#0ea5e9;--aura-cobalt:#2563eb;--aura-deep:#1d4ed8;--aura-ice:#bae6fd;--text-primary:#f8fafc;--text-secondary:#cbd5e1;--text-muted:#94a3b8;--text-code:#e2e8f0;--good:#34d399;--good-bg:#10b9811c;--good-border:#34d39959;--bad:#f87171;--bad-bg:#ef44441a;--bad-border:#f8717159;--warn:#fbbf24;--warn-bg:#f59e0b1a;--warn-border:#fbbf2452;--font-sans:"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;--font-mono:"JetBrains Mono", "Fira Code", "Cascadia Code", Consolas, monospace;--radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-xl:22px}*,:before,:after{box-sizing:border-box;margin:0;padding:0}html,body{background-color:var(--bg-void);width:100%;height:100%;color:var(--text-primary);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow:hidden}.aura-backdrop{z-index:0;pointer-events:none;background:radial-gradient(circle at 50% 0,#091731 0%,#030712 68%);position:fixed;inset:0;overflow:hidden}.aura-orb{filter:blur(95px);will-change:transform, opacity;border-radius:50%;position:absolute}.aura-orb-primary{background:radial-gradient(circle,#2563eb47 0%,#0ea5e91a 50%,#0000 72%);width:56vw;max-width:780px;height:56vw;max-height:780px;animation:18s ease-in-out infinite alternate auraDriftA;top:-22%;right:-10%}.aura-orb-secondary{background:radial-gradient(circle,#0ea5e938 0%,#1d4ed817 55%,#0000 72%);width:50vw;max-width:680px;height:50vw;max-height:680px;animation:22s ease-in-out infinite alternate auraDriftB;bottom:-24%;left:-10%}.aura-orb-accent{background:radial-gradient(circle,#38bdf81a 0%,#0000 70%);width:34vw;max-width:460px;height:34vw;max-height:460px;animation:12s ease-in-out infinite auraPulse;top:34%;left:36%}.aura-grid{background-image:linear-gradient(90deg,#38bdf80b 1px,#0000 1px),linear-gradient(#38bdf80b 1px,#0000 1px);background-size:44px 44px;position:absolute;inset:0;-webkit-mask-image:radial-gradient(80% 75% at 50% 45%,#000 30%,#0000 100%);mask-image:radial-gradient(80% 75% at 50% 45%,#000 30%,#0000 100%)}.aura-vignette{background:radial-gradient(#0000 52%,#020611b8 100%);position:absolute;inset:0}@keyframes auraDriftA{0%{transform:translate(0,0)scale(1)}to{transform:translate(-4%,5%)scale(1.07)}}@keyframes auraDriftB{0%{transform:translate(0,0)scale(1)}to{transform:translate(5%,-4%)scale(1.06)}}@keyframes auraPulse{0%,to{opacity:.65;transform:scale(.96)}50%{opacity:1;transform:scale(1.05)}}#app{z-index:1;grid-template-rows:52px minmax(0,1fr) 48px;width:100vw;height:100dvh;display:grid;position:relative}.deck-topbar{border-bottom:1px solid var(--border-subtle);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);background:#040a17c7;justify-content:space-between;align-items:center;gap:12px;padding:0 22px;display:flex}.brand-pill{letter-spacing:-.01em;color:var(--text-primary);white-space:nowrap;align-items:center;gap:10px;font-size:13px;font-weight:600;display:flex}.brand-dot{background:var(--aura-cyan);width:9px;height:9px;box-shadow:0 0 12px var(--aura-cyan), 0 0 24px var(--aura-cobalt);border-radius:50%}.brand-tag{font-family:var(--font-mono);color:var(--aura-cyan);background:#0ea5e91f;border:1px solid #38bdf847;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:600}.chapter-nav{scrollbar-width:none;align-items:center;gap:5px;display:flex;overflow-x:auto}.chapter-nav::-webkit-scrollbar{display:none}.chapter-btn{appearance:none;color:var(--text-muted);font-family:var(--font-sans);cursor:pointer;white-space:nowrap;background:0 0;border:1px solid #0000;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:500;transition:all .18s}.chapter-btn:hover{color:var(--text-primary);background:#38bdf814}.chapter-btn.active{color:#f0f9ff;background:linear-gradient(135deg,#2563eb59,#0ea5e938);border-color:#38bdf873;box-shadow:0 0 18px #0ea5e933}.toolbar-actions{align-items:center;gap:6px;display:flex}.icon-btn{appearance:none;border:1px solid var(--border-subtle);color:var(--text-secondary);font-family:var(--font-sans);border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;background:#0c1830b8;align-items:center;gap:6px;padding:5px 10px;font-size:12px;font-weight:500;transition:all .16s;display:inline-flex}.icon-btn:hover{color:#fff;border-color:var(--border-bright);background:#1d4ed847;box-shadow:0 0 14px #0ea5e938}.icon-btn.active{color:var(--aura-cyan);border-color:var(--aura-cyan);background:#0ea5e929}.kbd-hint{font-family:var(--font-mono);color:var(--text-muted);background:#020611b3;border:1px solid #94a3b838;border-radius:4px;padding:1px 5px;font-size:10px}.slide-stage{scrollbar-width:thin;scrollbar-color:#38bdf847 transparent;justify-content:center;align-items:center;width:100%;min-height:0;padding:20px 32px;display:flex;position:relative;overflow:hidden auto}.slide-container{width:100%;max-width:1320px;margin:auto;animation:.32s cubic-bezier(.16,1,.3,1) slideEnter}@keyframes slideEnter{0%{opacity:0;transform:translateY(10px)scale(.992)}to{opacity:1;transform:translateY(0)scale(1)}}.slide-header{flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:18px;display:flex}.slide-eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.09em;color:var(--aura-cyan);align-items:center;gap:8px;margin-bottom:6px;font-size:11.5px;font-weight:600;display:inline-flex}.eyebrow-badge{color:var(--aura-ice);background:#0ea5e924;border:1px solid #38bdf852;border-radius:999px;padding:2px 8px}.slide-title{letter-spacing:-.03em;color:var(--text-primary);font-size:clamp(24px,2.5vw,34px);font-weight:800;line-height:1.15}.text-aura{background:linear-gradient(90deg,#fff 0%,#7dd3fc 52%,#38bdf8 100%);color:#0000;-webkit-background-clip:text;background-clip:text}.slide-subtitle{color:var(--text-secondary);max-width:780px;margin-top:6px;font-size:14.5px;line-height:1.5}.cover-hero{grid-template-columns:1.15fr .85fr;align-items:center;gap:28px;display:grid}.cover-kicker{font-family:var(--font-mono);color:var(--aura-ice);background:#0ea5e91c;border:1px solid #38bdf852;border-radius:999px;align-items:center;gap:9px;margin-bottom:18px;padding:6px 14px;font-size:12px;display:inline-flex;box-shadow:0 0 28px #0ea5e929}.cover-title{letter-spacing:-.035em;margin-bottom:18px;font-size:clamp(34px,4.1vw,56px);font-weight:800;line-height:1.07}.cover-lead{color:var(--text-secondary);max-width:600px;margin-bottom:24px;font-size:16px;line-height:1.62}.cover-pills{flex-wrap:wrap;gap:8px;margin-bottom:26px;display:flex}.topic-chip{font-family:var(--font-mono);border-radius:var(--radius-sm);border:1px solid var(--border-medium);color:#e0f2fe;background:#081226e0;padding:6px 12px;font-size:12px;font-weight:500;box-shadow:inset 0 1px #bae6fd1a}.cta-start-btn{appearance:none;border-radius:var(--radius-md);color:#fff;font-family:var(--font-sans);cursor:pointer;background:linear-gradient(135deg,#2563eb 0%,#0284c7 100%);border:1px solid #7dd3fc8c;align-items:center;gap:10px;padding:12px 22px;font-size:14px;font-weight:600;transition:transform .16s,box-shadow .16s;display:inline-flex;box-shadow:0 0 30px #0ea5e961,inset 0 1px #ffffff40}.cta-start-btn:hover{transform:translateY(-1px);box-shadow:0 0 42px #38bdf88c,inset 0 1px #ffffff59}.split-grid{grid-template-columns:minmax(0,.94fr) minmax(0,1.06fr);align-items:stretch;gap:20px;display:grid}.cards-grid-3{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;display:grid}.cards-grid-5{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;display:grid}.aura-card{background:var(--bg-surface-1);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);flex-direction:column;gap:12px;padding:18px 20px;transition:border-color .2s,box-shadow .2s;display:flex;box-shadow:0 12px 34px #0000006b,inset 0 1px #bae6fd14}.aura-card-interactive{cursor:pointer}.aura-card-interactive:hover{border-color:var(--border-bright);box-shadow:0 14px 36px #0284c72e,inset 0 1px #bae6fd29}.card-label{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--aura-cyan);font-size:11px;font-weight:600}.card-title{color:var(--text-primary);letter-spacing:-.015em;font-size:16.5px;font-weight:700}.card-text{color:var(--text-secondary);font-size:13.5px;line-height:1.56}.bullet-list{flex-direction:column;gap:8px;list-style:none;display:flex}.bullet-list li{color:var(--text-secondary);align-items:flex-start;gap:9px;font-size:13.2px;line-height:1.5;display:flex}.bullet-dot{background:var(--aura-cyan);width:6px;height:6px;box-shadow:0 0 8px var(--aura-cyan);border-radius:50%;flex-shrink:0;margin-top:7px}.callout-row{grid-template-columns:1fr 1fr;gap:10px;display:grid}.mini-box{border-radius:var(--radius-md);padding:10px 12px;font-size:12.5px;line-height:1.45}.mini-box.bad{background:var(--bad-bg);border:1px solid var(--bad-border);color:#fecaca}.mini-box.good{background:var(--good-bg);border:1px solid var(--good-border);color:#d1fae5}.mini-box.info{color:#e0f2fe;background:#0ea5e917;border:1px solid #38bdf842}.mini-box strong{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;font-size:11px;display:block}.uml-box{border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:radial-gradient(circle at 50% 35%,#0ea5e914,#040a17eb);justify-content:center;align-items:center;min-height:175px;padding:10px;display:flex}.uml-box svg{width:100%;height:auto;max-height:230px;display:block}.ide-window{background:var(--bg-code);border:1px solid var(--border-medium);border-radius:var(--radius-lg);flex-direction:column;display:flex;overflow:hidden;box-shadow:0 18px 44px #0000008c,0 0 32px #0ea5e917,inset 0 1px #bae6fd1f}.ide-header{background:var(--bg-code-header);border-bottom:1px solid var(--border-subtle);flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;display:flex}.ide-dots{align-items:center;gap:6px;display:flex}.ide-dots span{border-radius:50%;width:10px;height:10px}.ide-dots span:first-child{opacity:.85;background:#ef4444}.ide-dots span:nth-child(2){opacity:.85;background:#f59e0b}.ide-dots span:nth-child(3){opacity:.85;background:#10b981}.ide-tabs{scrollbar-width:none;flex:1;align-items:center;gap:5px;margin-left:6px;display:flex;overflow-x:auto}.ide-tab{appearance:none;color:var(--text-muted);font-family:var(--font-mono);cursor:pointer;white-space:nowrap;background:#0f1c368c;border:1px solid #0000;border-radius:6px;padding:4px 10px;font-size:11.5px;transition:all .15s}.ide-tab:hover{color:var(--text-primary)}.ide-tab.active{color:#f0f9ff;background:#0ea5e929;border-color:#38bdf873}.ide-tab.tab-bad.active{color:#fecaca;background:#ef444429;border-color:#f8717180}.ide-tab.tab-good.active{color:#d1fae5;background:#10b98129;border-color:#34d39980}.ide-tab.tab-sim.active{border-color:var(--aura-cyan);color:#fff;background:linear-gradient(135deg,#2563eb61,#0ea5e940)}.copy-code-btn{appearance:none;border:1px solid var(--border-subtle);color:var(--text-muted);font-family:var(--font-mono);cursor:pointer;background:#0f1c36cc;border-radius:6px;padding:4px 9px;font-size:11px;transition:all .15s}.copy-code-btn:hover{color:#fff;border-color:var(--aura-cyan)}.ide-body{scrollbar-width:thin;scrollbar-color:#38bdf840 transparent;flex:1;max-height:410px;padding:12px 14px;overflow:auto}.code-table{border-collapse:collapse;width:100%;font-family:var(--font-mono);font-size:12.2px;line-height:1.54}.code-ln{-webkit-user-select:none;user-select:none;text-align:right;color:#475569;font-variant-numeric:tabular-nums;vertical-align:top;width:30px;padding-right:12px}.code-line{white-space:pre;color:var(--text-code);vertical-align:top}.tok-kw{color:#38bdf8;font-weight:600}.tok-type{color:#93c5fd}.tok-str{color:#6ee7b7}.tok-num{color:#fbbf24}.tok-ann{color:#7dd3fc;font-style:italic}.tok-com{color:#64748b;font-style:italic}.tok-fn{color:#e0f2fe}.sim-pane{flex-direction:column;flex:1;gap:12px;padding:16px;display:flex}.sim-controls{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.sim-btn{appearance:none;border-radius:var(--radius-sm);color:#f0f9ff;font-family:var(--font-mono);cursor:pointer;background:linear-gradient(135deg,#2563eb59,#0ea5e933);border:1px solid #38bdf86b;padding:7px 13px;font-size:12px;font-weight:500;transition:all .15s}.sim-btn:hover{background:linear-gradient(135deg,#2563eb8c,#0ea5e959);border-color:#7dd3fc;box-shadow:0 0 16px #38bdf847}.sim-btn.secondary{border-color:var(--border-subtle);color:var(--text-secondary);background:#0f1c36cc}.sim-btn.active-toggle{color:#ecfdf5;background:#10b98133;border-color:#34d399}.sim-expr{font-family:var(--font-mono);border-radius:var(--radius-sm);border:1px solid var(--border-subtle);color:#bae6fd;white-space:nowrap;background:#081226e6;padding:9px 12px;font-size:12px;overflow-x:auto}.sim-console{border-radius:var(--radius-md);font-family:var(--font-mono);background:#020611;border:1px solid #38bdf833;flex-direction:column;gap:4px;min-height:150px;max-height:225px;padding:12px;font-size:12px;line-height:1.6;display:flex;overflow-y:auto}.log-line{color:#cbd5e1}.log-line .ts{color:#475569;margin-right:8px}.log-line .hl-cyan{color:#38bdf8;font-weight:600}.log-line .hl-green{color:#34d399;font-weight:600}.log-line .hl-warn{color:#fbbf24}.aura-table{border-collapse:collapse;width:100%;font-size:13px}.aura-table th{text-align:left;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--aura-cyan);border-bottom:1px solid var(--border-medium);background:#0c1830d9;padding:10px 12px;font-size:11.5px}.aura-table td{color:var(--text-secondary);vertical-align:middle;border-bottom:1px solid #38bdf81a;padding:9.5px 12px}.aura-table tr:hover td{background:#0ea5e90d}.pill-yes{font-family:var(--font-mono);background:var(--good-bg);border:1px solid var(--good-border);color:var(--good);border-radius:999px;padding:2px 7px;font-size:11px;display:inline-block}.pill-warn{font-family:var(--font-mono);background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn);border-radius:999px;padding:2px 7px;font-size:11px;display:inline-block}.quiz-option{appearance:none;text-align:left;border-radius:var(--radius-md);border:1px solid var(--border-subtle);width:100%;color:var(--text-primary);font-family:var(--font-sans);cursor:pointer;background:#0a142ad9;padding:10px 14px;font-size:13px;transition:all .15s}.quiz-option:hover{border-color:var(--aura-cyan);background:#0ea5e91f}.quiz-option.correct{background:var(--good-bg);border-color:var(--good);color:#ecfdf5}.quiz-option.wrong{background:var(--bad-bg);border-color:var(--bad);color:#fecaca}.deck-bottombar{border-top:1px solid var(--border-subtle);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);background:#040a17d6;justify-content:space-between;align-items:center;padding:0 22px;display:flex;position:relative}.progress-track{background:#38bdf81f;height:2px;position:absolute;top:-1px;left:0;right:0}.progress-fill{height:100%;box-shadow:0 0 12px var(--aura-cyan);background:linear-gradient(90deg,#2563eb 0%,#38bdf8 65%,#bae6fd 100%);transition:width .28s cubic-bezier(.16,1,.3,1)}.slide-counter{font-family:var(--font-mono);color:var(--text-muted);font-variant-numeric:tabular-nums;font-size:12px}.slide-counter strong{color:var(--aura-cyan)}.dots-strip{align-items:center;gap:6px;display:flex}.slide-dot{appearance:none;cursor:pointer;background:#94a3b847;border:none;border-radius:999px;width:8px;height:8px;transition:all .2s}.slide-dot:hover{background:#7dd3fcb3}.slide-dot.active{background:var(--aura-cyan);width:24px;box-shadow:0 0 10px var(--aura-cyan)}.nav-controls{align-items:center;gap:8px;display:flex}.notes-drawer{z-index:30;border:1px solid var(--border-bright);border-radius:var(--radius-lg);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);background:#060e1ef5;max-width:900px;margin:0 auto;padding:14px 18px;position:fixed;bottom:60px;left:24px;right:24px;box-shadow:0 20px 50px #000000bf,0 0 28px #0ea5e938}.notes-drawer-header{font-family:var(--font-mono);color:var(--aura-cyan);justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11.5px;display:flex}.notes-drawer p{color:#e2e8f0;font-size:13.5px;line-height:1.55}.overview-modal{z-index:50;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);background:#030712eb;padding:28px 36px;position:fixed;inset:0;overflow-y:auto}.overview-grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;max-width:1320px;margin:20px auto 0;display:grid}.overview-card{appearance:none;text-align:left;background:var(--bg-surface-2);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-primary);cursor:pointer;padding:14px 16px;transition:all .16s}.overview-card:hover,.overview-card.current{border-color:var(--aura-cyan);transform:translateY(-2px);box-shadow:0 0 22px #0ea5e938}@media (width<=1024px){.cover-hero,.split-grid{grid-template-columns:1fr}.cards-grid-5{grid-template-columns:repeat(2,minmax(0,1fr))}.cards-grid-3{grid-template-columns:1fr}.slide-stage{align-items:flex-start;padding:16px}.dots-strip{display:none}}@media (prefers-reduced-motion:reduce){.aura-orb,.slide-container{animation:none!important}}.print-deck{display:none}@media print{@page{size:A4 landscape;margin:0}html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;background:#030712!important;height:auto!important;overflow:visible!important}#app,.aura-backdrop{display:none!important}.print-deck{display:block!important}.print-slide{page-break-after:always;break-after:page;background:radial-gradient(circle at 75% 15%,#0a1c3d 0%,#030712 70%);flex-direction:column;justify-content:center;width:100%;min-height:100vh;padding:28px 36px;display:flex}.ide-body{max-height:none!important;overflow:visible!important}}
+/*$vite$:1*/</style>
+  </head>
+  <body>
+    <!-- Ambient Dark & Electric Blue Aura Background -->
+    <div class="aura-backdrop" aria-hidden="true">
+      <div class="aura-orb aura-orb-primary"></div>
+      <div class="aura-orb aura-orb-secondary"></div>
+      <div class="aura-orb aura-orb-accent"></div>
+      <div class="aura-grid"></div>
+      <div class="aura-vignette"></div>
+    </div>
+
+    <div id="app"></div>
+  </body>
+</html>

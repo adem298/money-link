@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Lancer la Présentation (Microsoft Edge)",
+      "type": "msedge",
+      "request": "launch",
+      "file": "${workspaceFolder}/presentation.html"
+    },
+    {
+      "name": "Lancer la Présentation (Google Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "file": "${workspaceFolder}/presentation.html"
+    },
+    {
+      "name": "Mode Dev Vite (localhost:5173)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}"
+    }
+  ]
+}
